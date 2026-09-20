@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app>
+    <servlet>
+        <servlet-name>hello</servlet-name>
+        <servlet-class>cn.minitomcatnio.HelloServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>echo</servlet-name>
+        <servlet-class>cn.minitomcatnio.EchoServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>app</servlet-name>
+        <servlet-class>cn.minitomcatnio.AppServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>cookie</servlet-name>
+        <servlet-class>cn.minitomcatnio.CookieServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>session</servlet-name>
+        <servlet-class>cn.minitomcatnio.SessionServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>hello</servlet-name>
+        <url-pattern>/hello</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>echo</servlet-name>
+        <url-pattern>/echo</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>app</servlet-name>
+        <url-pattern>/app/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>cookie</servlet-name>
+        <url-pattern>/cookie</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>session</servlet-name>
+        <url-pattern>/session</url-pattern>
+    </servlet-mapping>
+</web-app>

@@ -12,14 +12,7 @@ public class NioServer {
 
     public static void main(String[] args) throws IOException {
         Context context = new Context(Path.of("webapps", "ROOT"));
-        context.addServlet("/hello", new HelloServlet());
-        context.addServlet("/echo", new EchoServlet());
-        context.addServlet("/app/*", new AppServlet());
-        context.addServlet("/cookie", new CookieServlet());
-        context.addServlet("/session", new SessionServlet());
-
         Context other = new Context(Path.of("webapps", "other"));
-        other.addServlet("/ping", new PingServlet());
 
         Host host = new Host("localhost");
         host.addContext("", context);

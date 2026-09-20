@@ -17,6 +17,7 @@ public class Context {
         this.docBase = docBase.toAbsolutePath().normalize();
         pipeline.addValve(new AccessLogValve());
         pipeline.setBasic(new StandardContextValve(this));
+        WebXmlLoader.load(this);
     }
 
     public Path getDocBase() {

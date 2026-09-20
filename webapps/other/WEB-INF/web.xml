@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app>
+    <servlet>
+        <servlet-name>ping</servlet-name>
+        <servlet-class>cn.minitomcatnio.PingServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ping</servlet-name>
+        <url-pattern>/ping</url-pattern>
+    </servlet-mapping>
+</web-app>
