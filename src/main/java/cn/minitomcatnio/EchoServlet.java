@@ -1,16 +1,15 @@
 package cn.minitomcatnio;
 
 /**
- * 把请求 body 原样写回，用来验收 Content-Length 读取。
+ * 用来验收参数解析：query string 和 x-www-form-urlencoded 表单。
  */
 public class EchoServlet implements Servlet {
 
     @Override
     public void service(HttpRequest request, HttpResponse response) {
-        String contentType = request.getHeader("content-type");
+        String name = request.getParameter("name");
         response.setStatus(200, "OK");
-        response.setHeader("Content-Type",
-                contentType != null ? contentType : "text/plain; charset=UTF-8");
-        response.setBody(request.getBody());
+        response.setHeader("Content-Type", "text/plain; charset=UTF-8");
+        response.setBody("name=" + (name == null ? "" : name) + "\n");
     }
 }

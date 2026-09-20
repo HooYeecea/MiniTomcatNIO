@@ -1,5 +1,6 @@
 package cn.minitomcatnio;
 
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -7,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 一次 HTTP 请求的解析结果：请求行、Header，以及 Content-Length 指定的 body。
+ * 一次 HTTP 请求：请求行、Header、body，以及 query / 表单参数。
  */
 public class HttpRequest {
 
@@ -15,6 +16,7 @@ public class HttpRequest {
     private final String uri;
     private final String version;
     private final Map<String, String> headers;
+    private final Map<String, String> parameters = new LinkedHashMap<>();
     private byte[] body = new byte[0];
 
     private HttpRequest(String method, String uri, String version, Map<String, String> headers) {
@@ -22,6 +24,7 @@ public class HttpRequest {
         this.uri = uri;
         this.version = version;
         this.headers = headers;
+        parseQueryString();
     }
 
     public String getMethod() {
@@ -62,6 +65,15 @@ public class HttpRequest {
         return Collections.unmodifiableMap(headers);
     }
 
+    /** 同名参数只保留第一次出现的值。 */
+    public String getParameter(String name) {
+        return parameters.get(name);
+    }
+
+    public Map<String, String> getParameters() {
+        return Collections.unmodifiableMap(parameters);
+    }
+
     public byte[] getBody() {
         return body;
     }
@@ -72,6 +84,7 @@ public class HttpRequest {
 
     void setBody(byte[] body) {
         this.body = body == null ? new byte[0] : body;
+        parseFormBody();
     }
 
     /**
@@ -134,5 +147,45 @@ public class HttpRequest {
         }
 
         return new HttpRequest(requestLine[0], requestLine[1], requestLine[2], headers);
+    }
+
+    private void parseQueryString() {
+        int query = uri.indexOf('?');
+        if (query < 0 || query == uri.length() - 1) {
+            return;
+        }
+        parseUrlEncoded(uri.substring(query + 1));
+    }
+
+    private void parseFormBody() {
+        String contentType = getHeader("content-type");
+        if (contentType == null
+                || !contentType.toLowerCase().startsWith("application/x-www-form-urlencoded")) {
+            return;
+        }
+        parseUrlEncoded(getBodyAsString());
+    }
+
+    private void parseUrlEncoded(String encoded) {
+        if (encoded == null || encoded.isEmpty()) {
+            return;
+        }
+        for (String pair : encoded.split("&")) {
+            if (pair.isEmpty()) {
+                continue;
+            }
+            int eq = pair.indexOf('=');
+            String rawName = eq >= 0 ? pair.substring(0, eq) : pair;
+            String rawValue = eq >= 0 ? pair.substring(eq + 1) : "";
+            parameters.putIfAbsent(decode(rawName), decode(rawValue));
+        }
+    }
+
+    private static String decode(String value) {
+        try {
+            return URLDecoder.decode(value, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return value;
+        }
     }
 }
