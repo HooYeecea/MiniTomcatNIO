@@ -46,6 +46,17 @@ public class HttpRequest {
         return headers.get(name.toLowerCase());
     }
 
+    /**
+     * HTTP/1.1 默认保活，HTTP/1.0 默认关闭；请求头 Connection 可以覆盖。
+     */
+    public boolean shouldKeepAlive() {
+        String connection = getHeader("connection");
+        if (version != null && version.toUpperCase().startsWith("HTTP/1.0")) {
+            return connection != null && "keep-alive".equalsIgnoreCase(connection);
+        }
+        return connection == null || !"close".equalsIgnoreCase(connection);
+    }
+
     public Map<String, String> getHeaders() {
         return Collections.unmodifiableMap(headers);
     }

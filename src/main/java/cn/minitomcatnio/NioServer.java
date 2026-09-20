@@ -160,13 +160,19 @@ public class NioServer {
             response.setHeader("Content-Type", "text/plain; charset=UTF-8");
             response.setBody("500 Internal Server Error");
         }
+        boolean keepAlive = request.shouldKeepAlive();
+        response.setHeader("Connection", keepAlive ? "keep-alive" : "close");
+        Connection conn = (Connection) key.attachment();
+        if (conn != null) {
+            conn.keepAlive = keepAlive;
+        }
         send(key, response);
     }
 
     /**
      * 处理写事件（OP_WRITE）。
      * 一次 write 不一定能发完，buffer 还有 remaining 就下次继续写。
-     * 发完后关闭连接（这一步先不做 Keep-Alive）。
+     * 发完后：Keep-Alive 则清空缓冲继续读，否则关连接。
      */
     private static void handleWrite(SelectionKey key) throws IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
@@ -175,13 +181,23 @@ public class NioServer {
         clientChannel.write(conn.writeBuffer);
 
         if (!conn.writeBuffer.hasRemaining()) {
-            closeConnection(key);
+            if (conn.keepAlive) {
+                conn.readBuffer.clear();
+                conn.writeBuffer = null;
+                conn.keepAlive = false;
+                key.interestOps(SelectionKey.OP_READ);
+            } else {
+                closeConnection(key);
+            }
         }
     }
 
     private static void prepareResponse(SelectionKey key, int status, String reason, String body) {
+        Connection conn = (Connection) key.attachment();
+        conn.keepAlive = false;
         HttpResponse response = new HttpResponse();
         response.setStatus(status, reason);
+        response.setHeader("Connection", "close");
         response.setBody(body);
         send(key, response);
     }
@@ -212,6 +228,7 @@ public class NioServer {
     private static class Connection {
         final ByteBuffer readBuffer = ByteBuffer.allocate(HEADER_BUFFER_SIZE);
         volatile ByteBuffer writeBuffer;
+        volatile boolean keepAlive;
     }
 
 }

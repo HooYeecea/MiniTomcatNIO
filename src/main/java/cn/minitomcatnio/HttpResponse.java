@@ -17,7 +17,6 @@ public class HttpResponse {
 
     public HttpResponse() {
         headers.put("Content-Type", "text/plain; charset=UTF-8");
-        headers.put("Connection", "close");
     }
 
     public void setStatus(int status, String reason) {
