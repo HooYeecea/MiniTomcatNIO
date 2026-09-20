@@ -3,6 +3,10 @@ package cn.minitomcatnio.container;
 import cn.minitomcatnio.http.HttpRequest;
 import cn.minitomcatnio.http.HttpResponse;
 
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -28,6 +32,29 @@ public class Host {
         String normalized = normalize(path);
         context.setPath(normalized);
         contexts.put(normalized, context);
+    }
+
+    /**
+     * 扫描 webapps 下的子目录并部署：ROOT -> ""，其它目录名 -> /目录名。
+     */
+    public void deployWebapps(Path webappsDir) throws IOException {
+        Path root = webappsDir.toAbsolutePath().normalize();
+        if (!Files.isDirectory(root)) {
+            throw new IllegalStateException("webapps directory not found: " + root);
+        }
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(root)) {
+            for (Path appDir : stream) {
+                if (!Files.isDirectory(appDir)) {
+                    continue;
+                }
+                String dirName = appDir.getFileName().toString();
+                String contextPath = "ROOT".equalsIgnoreCase(dirName) ? "" : "/" + dirName;
+                System.out.println("Deploying " + appDir + " as context ["
+                        + (contextPath.isEmpty() ? "/" : contextPath) + "]");
+                addContext(contextPath, new Context(appDir));
+            }
+        }
     }
 
     public Map<String, Context> contexts() {

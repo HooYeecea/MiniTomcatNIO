@@ -1,7 +1,6 @@
 package cn.minitomcatnio;
 
 import cn.minitomcatnio.connector.Connector;
-import cn.minitomcatnio.container.Context;
 import cn.minitomcatnio.container.Engine;
 import cn.minitomcatnio.container.Host;
 
@@ -9,19 +8,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
- * 启动入口：搭好 Engine / Host / Context，交给 Connector 监听。
+ * 启动入口：创建 Engine / Host，扫描 webapps 自动部署后交给 Connector。
  */
 public class NioServer {
 
     private static final int PORT = 8080;
 
     public static void main(String[] args) throws IOException {
-        Context context = new Context(Path.of("webapps", "ROOT"));
-        Context other = new Context(Path.of("webapps", "other"));
-
         Host host = new Host("localhost");
-        host.addContext("", context);
-        host.addContext("/other", other);
+        host.deployWebapps(Path.of("webapps"));
 
         Engine engine = new Engine("Catalina");
         engine.setDefaultHost("localhost");
