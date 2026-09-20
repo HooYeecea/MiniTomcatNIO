@@ -8,8 +8,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 public class NioServer {
@@ -98,27 +98,30 @@ public class NioServer {
             return;
         }
 
-        int headerEnd = indexOfHeaderEnd(conn.readBuffer);
+        int headerEnd = HttpRequest.indexOfHeaderEnd(conn.readBuffer);
         if (headerEnd < 0) {
             if (!conn.readBuffer.hasRemaining()) {
                 System.out.println("请求头过大，拒绝");
-                prepareResponse(key, 400, "Bad Request: headers too large");
+                prepareResponse(key, 400, "Bad Request", "Bad Request: headers too large");
             }
             return;
         }
 
-        ParsedRequest request = parseRequest(conn.readBuffer, headerEnd);
+        HttpRequest request = HttpRequest.parse(conn.readBuffer, headerEnd);
         if (request == null) {
-            prepareResponse(key, 400, "Bad Request");
+            prepareResponse(key, 400, "Bad Request", "Bad Request");
             return;
         }
 
-        System.out.println("解析请求: " + request.method + " " + request.uri);
+        System.out.println("解析请求: " + request.getMethod() + " " + request.getUri());
+        for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
+            System.out.println("  " + header.getKey() + ": " + header.getValue());
+        }
 
         String body = "Hello NIO!\n"
-                + "method=" + request.method + "\n"
-                + "uri=" + request.uri + "\n";
-        prepareResponse(key, 200, body);
+                + "method=" + request.getMethod() + "\n"
+                + "uri=" + request.getUri() + "\n";
+        prepareResponse(key, 200, "OK", body);
     }
 
     /**
@@ -137,68 +140,12 @@ public class NioServer {
         }
     }
 
-    /**
-     * 在已读字节里找请求头结束位置（第一个 \r 的下标）。
-     * buffer 此时仍是写模式：position = 已读长度。
-     */
-    private static int indexOfHeaderEnd(ByteBuffer buffer) {
-        byte[] arr = buffer.array();
-        int length = buffer.position();
-        for (int i = 0; i <= length - 4; i++) {
-            if (arr[i] == '\r' && arr[i + 1] == '\n'
-                    && arr[i + 2] == '\r' && arr[i + 3] == '\n') {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * 只解析请求行：METHOD URI VERSION。
-     * Header 字段这一步先读出来打印，还不做路由。
-     */
-    private static ParsedRequest parseRequest(ByteBuffer buffer, int headerEnd) {
-        byte[] arr = buffer.array();
-        String headerBlock = new String(arr, 0, headerEnd, StandardCharsets.ISO_8859_1);
-        String[] lines = headerBlock.split("\r\n");
-        if (lines.length == 0) {
-            return null;
-        }
-
-        String[] requestLine = lines[0].split(" ");
-        if (requestLine.length < 3) {
-            return null;
-        }
-
-        ParsedRequest request = new ParsedRequest();
-        request.method = requestLine[0];
-        request.uri = requestLine[1];
-        request.version = requestLine[2];
-
-        System.out.println("请求头:");
-        for (int i = 1; i < lines.length; i++) {
-            System.out.println("  " + lines[i]);
-        }
-        return request;
-    }
-
-    private static void prepareResponse(SelectionKey key, int status, String body) {
+    private static void prepareResponse(SelectionKey key, int status, String reason, String body) {
         Connection conn = (Connection) key.attachment();
-        byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
-
-        String reason = status == 200 ? "OK" : "Bad Request";
-        String header = "HTTP/1.1 " + status + " " + reason + "\r\n"
-                + "Content-Type: text/plain; charset=UTF-8\r\n"
-                + "Content-Length: " + bodyBytes.length + "\r\n"
-                + "Connection: close\r\n"
-                + "\r\n";
-        byte[] headerBytes = header.getBytes(StandardCharsets.ISO_8859_1);
-
-        conn.writeBuffer = ByteBuffer.allocate(headerBytes.length + bodyBytes.length);
-        conn.writeBuffer.put(headerBytes);
-        conn.writeBuffer.put(bodyBytes);
-        conn.writeBuffer.flip();
-
+        HttpResponse response = new HttpResponse();
+        response.setStatus(status, reason);
+        response.setBody(body);
+        conn.writeBuffer = response.toByteBuffer();
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
@@ -216,9 +163,4 @@ public class NioServer {
         ByteBuffer writeBuffer;
     }
 
-    private static class ParsedRequest {
-        String method;
-        String uri;
-        String version;
-    }
 }
