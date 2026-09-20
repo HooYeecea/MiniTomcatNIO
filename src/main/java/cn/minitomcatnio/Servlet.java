@@ -5,5 +5,8 @@ package cn.minitomcatnio;
  */
 public interface Servlet {
 
+    default void init() {
+    }
+
     void service(HttpRequest request, HttpResponse response);
 }

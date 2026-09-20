@@ -5,5 +5,8 @@ package cn.minitomcatnio;
  */
 public interface Filter {
 
+    default void init() {
+    }
+
     void doFilter(HttpRequest request, HttpResponse response, FilterChain chain);
 }

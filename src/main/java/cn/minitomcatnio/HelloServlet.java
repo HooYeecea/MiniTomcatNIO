@@ -6,6 +6,11 @@ package cn.minitomcatnio;
 public class HelloServlet implements Servlet {
 
     @Override
+    public void init() {
+        System.out.println("Servlet init: HelloServlet");
+    }
+
+    @Override
     public void service(HttpRequest request, HttpResponse response) {
         response.setStatus(200, "OK");
         response.setHeader("Content-Type", "text/plain; charset=UTF-8");

@@ -20,6 +20,10 @@
         <servlet-name>session</servlet-name>
         <servlet-class>cn.minitomcatnio.SessionServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>forward</servlet-name>
+        <servlet-class>cn.minitomcatnio.ForwardServlet</servlet-class>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>hello</servlet-name>
@@ -40,6 +44,10 @@
     <servlet-mapping>
         <servlet-name>session</servlet-name>
         <url-pattern>/session</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>forward</servlet-name>
+        <url-pattern>/forward</url-pattern>
     </servlet-mapping>
     <filter>
         <filter-name>log</filter-name>

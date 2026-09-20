@@ -6,6 +6,11 @@ package cn.minitomcatnio;
 public class PingServlet implements Servlet {
 
     @Override
+    public void init() {
+        System.out.println("Servlet init: PingServlet");
+    }
+
+    @Override
     public void service(HttpRequest request, HttpResponse response) {
         response.setStatus(200, "OK");
         response.setHeader("Content-Type", "text/plain; charset=UTF-8");

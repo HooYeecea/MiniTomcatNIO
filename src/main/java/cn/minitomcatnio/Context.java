@@ -2,6 +2,7 @@ package cn.minitomcatnio;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 
 /**
@@ -21,6 +22,7 @@ public class Context {
         pipeline.addValve(new AccessLogValve());
         pipeline.setBasic(new StandardContextValve(this));
         WebXmlLoader.load(this);
+        start();
     }
 
     public Path getDocBase() {
@@ -52,14 +54,41 @@ public class Context {
     }
 
     /**
+     * web.xml 装完后初始化每个 Servlet / Filter，同一实例只 init 一次。
+     */
+    private void start() {
+        IdentityHashMap<Servlet, Boolean> startedServlets = new IdentityHashMap<>();
+        for (Wrapper wrapper : mapper.mappings().values()) {
+            Servlet servlet = wrapper.getServlet();
+            if (startedServlets.put(servlet, Boolean.TRUE) == null) {
+                servlet.init();
+            }
+        }
+        IdentityHashMap<Filter, Boolean> startedFilters = new IdentityHashMap<>();
+        for (FilterMapping mapping : filterMappings) {
+            if (startedFilters.put(mapping.filter, Boolean.TRUE) == null) {
+                mapping.filter.init();
+            }
+        }
+    }
+
+    /**
      * 基本阀调用：命中 Wrapper 则执行，否则走静态资源。
      */
     void service(HttpRequest request, HttpResponse response) {
         request.setContextPath(path);
+        request.bindContext(this);
+        request.bindSession(sessionManager, response);
+        dispatch(request, response);
+    }
+
+    /**
+     * 在当前 Context 内分发。forward 也会再走这里。
+     */
+    void dispatch(HttpRequest request, HttpResponse response) {
         Mapper.Match match = mapper.match(request.getPathWithinContext());
         if (match != null) {
             request.setMapping(match.servletPath, match.pathInfo);
-            request.bindSession(sessionManager, response);
             List<Filter> filters = matchingFilters(request.getPathWithinContext());
             new ApplicationFilterChain(filters, match.wrapper).doFilter(request, response);
             return;

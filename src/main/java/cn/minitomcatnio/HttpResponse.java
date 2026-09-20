@@ -47,6 +47,15 @@ public class HttpResponse {
         this.body = body == null ? new byte[0] : body;
     }
 
+    /** forward 前清空本次响应；已写下的 Set-Cookie 保留。 */
+    public void reset() {
+        status = 200;
+        reason = "OK";
+        headers.clear();
+        headers.put("Content-Type", "text/plain; charset=UTF-8");
+        body = new byte[0];
+    }
+
     /**
      * 编码成一条完整的 HTTP/1.1 报文，buffer 已 flip，可直接 channel.write。
      */

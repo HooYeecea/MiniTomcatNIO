@@ -25,6 +25,9 @@ public class HttpRequest {
     private SessionManager sessionManager;
     private HttpResponse response;
     private HttpSession session;
+    private Context context;
+    /** forward 后覆盖应用内路径；未 forward 时为 null。 */
+    private String dispatchedPath;
 
     private HttpRequest(String method, String uri, String version, Map<String, String> headers) {
         this.method = method;
@@ -56,6 +59,9 @@ public class HttpRequest {
 
     /** 去掉 Context 路径后的剩余路径，供该应用内部映射使用。 */
     public String getPathWithinContext() {
+        if (dispatchedPath != null) {
+            return dispatchedPath;
+        }
         String path = getPath();
         if (contextPath == null || contextPath.isEmpty()) {
             return path;
@@ -72,6 +78,21 @@ public class HttpRequest {
 
     void setContextPath(String contextPath) {
         this.contextPath = contextPath == null ? "" : contextPath;
+    }
+
+    void setDispatchedPath(String dispatchedPath) {
+        this.dispatchedPath = dispatchedPath;
+    }
+
+    void bindContext(Context context) {
+        this.context = context;
+    }
+
+    public RequestDispatcher getRequestDispatcher(String path) {
+        if (context == null) {
+            throw new IllegalStateException("Request is not bound to a Context");
+        }
+        return new ApplicationDispatcher(context, path);
     }
 
     public String getServletPath() {

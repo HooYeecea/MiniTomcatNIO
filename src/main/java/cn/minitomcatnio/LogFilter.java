@@ -6,6 +6,11 @@ package cn.minitomcatnio;
 public class LogFilter implements Filter {
 
     @Override
+    public void init() {
+        System.out.println("Filter init: LogFilter");
+    }
+
+    @Override
     public void doFilter(HttpRequest request, HttpResponse response, FilterChain chain) {
         System.out.println("Filter: " + request.getPath());
         chain.doFilter(request, response);
