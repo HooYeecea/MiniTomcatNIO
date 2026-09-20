@@ -4,53 +4,53 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 精确路径优先，其次最长前缀（/app/*）。未命中由调用方走静态资源。
+ * 精确路径优先，其次最长前缀（/app/*）。匹配结果是 Wrapper。
  */
 public class Mapper {
 
-    private final Map<String, Servlet> exactMappings = new LinkedHashMap<>();
+    private final Map<String, Wrapper> exactMappings = new LinkedHashMap<>();
     /** key 是前缀本身，例如 /app，对应模式 /app/* */
-    private final Map<String, Servlet> prefixMappings = new LinkedHashMap<>();
+    private final Map<String, Wrapper> prefixMappings = new LinkedHashMap<>();
 
-    public void addServlet(String pattern, Servlet servlet) {
+    public void addWrapper(String pattern, Wrapper wrapper) {
         if (pattern.endsWith("/*")) {
-            prefixMappings.put(pattern.substring(0, pattern.length() - 2), servlet);
+            prefixMappings.put(pattern.substring(0, pattern.length() - 2), wrapper);
             return;
         }
-        exactMappings.put(pattern, servlet);
+        exactMappings.put(pattern, wrapper);
     }
 
     public Match match(String path) {
-        Servlet exact = exactMappings.get(path);
+        Wrapper exact = exactMappings.get(path);
         if (exact != null) {
             return new Match(exact, path, path, null);
         }
 
         String bestPrefix = null;
-        Servlet bestServlet = null;
-        for (Map.Entry<String, Servlet> entry : prefixMappings.entrySet()) {
+        Wrapper bestWrapper = null;
+        for (Map.Entry<String, Wrapper> entry : prefixMappings.entrySet()) {
             String prefix = entry.getKey();
             if (!matchesPrefix(path, prefix)) {
                 continue;
             }
             if (bestPrefix == null || prefix.length() > bestPrefix.length()) {
                 bestPrefix = prefix;
-                bestServlet = entry.getValue();
+                bestWrapper = entry.getValue();
             }
         }
-        if (bestServlet == null) {
+        if (bestWrapper == null) {
             return null;
         }
 
         String pathInfo = path.length() == bestPrefix.length()
                 ? null
                 : path.substring(bestPrefix.length());
-        return new Match(bestServlet, bestPrefix + "/*", bestPrefix, pathInfo);
+        return new Match(bestWrapper, bestPrefix + "/*", bestPrefix, pathInfo);
     }
 
-    public Map<String, Servlet> mappings() {
-        Map<String, Servlet> all = new LinkedHashMap<>(exactMappings);
-        prefixMappings.forEach((prefix, servlet) -> all.put(prefix + "/*", servlet));
+    public Map<String, Wrapper> mappings() {
+        Map<String, Wrapper> all = new LinkedHashMap<>(exactMappings);
+        prefixMappings.forEach((prefix, wrapper) -> all.put(prefix + "/*", wrapper));
         return all;
     }
 
@@ -62,13 +62,13 @@ public class Mapper {
     }
 
     public static final class Match {
-        public final Servlet servlet;
+        public final Wrapper wrapper;
         public final String pattern;
         public final String servletPath;
         public final String pathInfo;
 
-        Match(Servlet servlet, String pattern, String servletPath, String pathInfo) {
-            this.servlet = servlet;
+        Match(Wrapper wrapper, String pattern, String servletPath, String pathInfo) {
+            this.wrapper = wrapper;
             this.pattern = pattern;
             this.servletPath = servletPath;
             this.pathInfo = pathInfo;

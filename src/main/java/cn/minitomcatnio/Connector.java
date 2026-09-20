@@ -50,8 +50,8 @@ public class Connector {
         System.out.println("Connector started on port " + port);
         System.out.println("workers: " + WORKER_THREADS);
         System.out.println("webroot: " + StaticResourceProcessor.WEB_ROOT);
-        context.mapper().mappings().forEach((path, servlet) ->
-                System.out.println("servlet: " + path + " -> " + servlet.getClass().getSimpleName()));
+        context.mapper().mappings().forEach((path, wrapper) ->
+                System.out.println("servlet: " + path + " -> " + wrapper.getServlet().getClass().getSimpleName()));
 
         while (true) {
             selector.select();

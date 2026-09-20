@@ -15,7 +15,7 @@ public class Context {
     }
 
     public void addServlet(String pattern, Servlet servlet) {
-        mapper.addServlet(pattern, servlet);
+        mapper.addWrapper(pattern, new Wrapper(pattern, servlet));
     }
 
     public Mapper mapper() {
@@ -27,14 +27,14 @@ public class Context {
     }
 
     /**
-     * 基本阀调用：命中 Servlet 则执行，否则走静态资源。
+     * 基本阀调用：命中 Wrapper 则执行，否则走静态资源。
      */
     void service(HttpRequest request, HttpResponse response) {
         Mapper.Match match = mapper.match(request.getPath());
         if (match != null) {
             request.setMapping(match.servletPath, match.pathInfo);
             request.bindSession(sessionManager, response);
-            match.servlet.service(request, response);
+            match.wrapper.invoke(request, response);
             return;
         }
         StaticResourceProcessor.process(request, response);
