@@ -27,6 +27,10 @@ public class HttpResponse {
         this.reason = reason;
     }
 
+    public int getStatus() {
+        return status;
+    }
+
     public void setHeader(String name, String value) {
         headers.put(name, value);
     }

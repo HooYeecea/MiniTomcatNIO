@@ -1,12 +1,18 @@
 package cn.minitomcatnio;
 
 /**
- * 最小 Container：一个 web 应用。负责 Servlet 映射、Session 和静态资源。
+ * 最小 Container：一个 web 应用。请求先走 Pipeline，最后一关才分发 Servlet。
  */
 public class Context {
 
     private final Mapper mapper = new Mapper();
     private final SessionManager sessionManager = new SessionManager();
+    private final Pipeline pipeline = new Pipeline();
+
+    public Context() {
+        pipeline.addValve(new AccessLogValve());
+        pipeline.setBasic(new StandardContextValve(this));
+    }
 
     public void addServlet(String pattern, Servlet servlet) {
         mapper.addServlet(pattern, servlet);
@@ -17,6 +23,13 @@ public class Context {
     }
 
     public void invoke(HttpRequest request, HttpResponse response) {
+        pipeline.invoke(request, response);
+    }
+
+    /**
+     * 基本阀调用：命中 Servlet 则执行，否则走静态资源。
+     */
+    void service(HttpRequest request, HttpResponse response) {
         Mapper.Match match = mapper.match(request.getPath());
         if (match != null) {
             request.setMapping(match.servletPath, match.pathInfo);
