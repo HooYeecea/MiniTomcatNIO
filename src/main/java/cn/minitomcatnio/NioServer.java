@@ -4,6 +4,7 @@ package cn.minitomcatnio;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -11,13 +12,24 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class NioServer {
 
     private static final int PORT = 8080;
     /** HTTP 请求头上限。超过还没看到 \r\n\r\n，就当作非法请求。 */
     private static final int HEADER_BUFFER_SIZE = 8192;
+    private static final int WORKER_THREADS = 8;
     private static final Mapper mapper = new Mapper();
+    private static final AtomicInteger workerSeq = new AtomicInteger();
+    private static final ExecutorService workers = Executors.newFixedThreadPool(WORKER_THREADS, r -> {
+        Thread t = new Thread(r);
+        t.setName("nio-worker-" + workerSeq.incrementAndGet());
+        t.setDaemon(true);
+        return t;
+    });
 
     public static void main(String[] args) throws IOException {
         mapper.addServlet("/hello", new HelloServlet());
@@ -30,6 +42,7 @@ public class NioServer {
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         System.out.println("NIO HTTP Server started on port " + PORT);
+        System.out.println("workers: " + WORKER_THREADS);
         System.out.println("webroot: " + StaticResourceProcessor.WEB_ROOT);
         mapper.mappings().forEach((path, servlet) ->
                 System.out.println("servlet: " + path + " -> " + servlet.getClass().getSimpleName()));
@@ -124,6 +137,15 @@ public class NioServer {
             System.out.println("  " + header.getKey() + ": " + header.getValue());
         }
 
+        // 头已经齐了：暂停读，业务交给 Worker，避免堵住 Selector。
+        key.interestOps(0);
+        workers.execute(() -> processRequest(key, request));
+    }
+
+    /**
+     * Worker 线程：跑 Servlet / 静态资源，再切回 OP_WRITE 让 Selector 发数据。
+     */
+    private static void processRequest(SelectionKey key, HttpRequest request) {
         HttpResponse response = new HttpResponse();
         try {
             Servlet servlet = mapper.match(request.getPath());
@@ -165,9 +187,17 @@ public class NioServer {
     }
 
     private static void send(SelectionKey key, HttpResponse response) {
+        if (!key.isValid()) {
+            return;
+        }
         Connection conn = (Connection) key.attachment();
         conn.writeBuffer = response.toByteBuffer();
-        key.interestOps(SelectionKey.OP_WRITE);
+        try {
+            key.interestOps(SelectionKey.OP_WRITE);
+            // Worker 改 interest 时 Selector 可能正堵在 select() 里，必须 wakeup。
+            key.selector().wakeup();
+        } catch (CancelledKeyException ignored) {
+        }
     }
 
     private static void closeConnection(SelectionKey key) {
@@ -181,7 +211,7 @@ public class NioServer {
     /** 每个 SocketChannel 自己的读写缓冲，挂在 SelectionKey.attachment 上。 */
     private static class Connection {
         final ByteBuffer readBuffer = ByteBuffer.allocate(HEADER_BUFFER_SIZE);
-        ByteBuffer writeBuffer;
+        volatile ByteBuffer writeBuffer;
     }
 
 }
