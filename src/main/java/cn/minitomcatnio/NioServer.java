@@ -25,6 +25,7 @@ public class NioServer {
     private static final int MAX_BODY_SIZE = 1024 * 1024;
     private static final int WORKER_THREADS = 8;
     private static final Mapper mapper = new Mapper();
+    private static final SessionManager sessionManager = new SessionManager();
     private static final AtomicInteger workerSeq = new AtomicInteger();
     private static final ExecutorService workers = Executors.newFixedThreadPool(WORKER_THREADS, r -> {
         Thread t = new Thread(r);
@@ -38,6 +39,7 @@ public class NioServer {
         mapper.addServlet("/echo", new EchoServlet());
         mapper.addServlet("/app/*", new AppServlet());
         mapper.addServlet("/cookie", new CookieServlet());
+        mapper.addServlet("/session", new SessionServlet());
 
         ServerSocketChannel serverChannel = ServerSocketChannel.open();
         serverChannel.configureBlocking(false);
@@ -214,6 +216,7 @@ public class NioServer {
             Mapper.Match match = mapper.match(request.getPath());
             if (match != null) {
                 request.setMapping(match.servletPath, match.pathInfo);
+                request.bindSession(sessionManager, response);
                 match.servlet.service(request, response);
             } else {
                 StaticResourceProcessor.process(request, response);

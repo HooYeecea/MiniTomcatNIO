@@ -21,6 +21,9 @@ public class HttpRequest {
     private String servletPath;
     private String pathInfo;
     private final Map<String, String> cookies = new LinkedHashMap<>();
+    private SessionManager sessionManager;
+    private HttpResponse response;
+    private HttpSession session;
 
     private HttpRequest(String method, String uri, String version, Map<String, String> headers) {
         this.method = method;
@@ -94,6 +97,26 @@ public class HttpRequest {
 
     public String getCookie(String name) {
         return cookies.get(name);
+    }
+
+    void bindSession(SessionManager sessionManager, HttpResponse response) {
+        this.sessionManager = sessionManager;
+        this.response = response;
+    }
+
+    /**
+     * 按 Cookie 里的 JSESSIONID 取 Session；没有就新建并 Set-Cookie。
+     */
+    public HttpSession getSession() {
+        if (session != null) {
+            return session;
+        }
+        String requestedId = getCookie(SessionManager.COOKIE_NAME);
+        session = sessionManager.getOrCreate(requestedId);
+        if (requestedId == null || !requestedId.equals(session.getId())) {
+            response.addCookie(SessionManager.COOKIE_NAME, session.getId());
+        }
+        return session;
     }
 
     public byte[] getBody() {
