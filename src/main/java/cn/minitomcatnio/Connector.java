@@ -50,14 +50,17 @@ public class Connector {
         System.out.println("Connector started on port " + port);
         System.out.println("engine: " + engine.getName() + " defaultHost=" + engine.getDefaultHost());
         System.out.println("workers: " + WORKER_THREADS);
-        System.out.println("webroot: " + StaticResourceProcessor.WEB_ROOT);
         engine.hosts().forEach((hostName, host) ->
-                host.contexts().forEach((contextPath, context) ->
-                        context.mapper().mappings().forEach((path, wrapper) ->
-                                System.out.println("servlet: [" + hostName + "]"
-                                        + (contextPath.isEmpty() ? "" : contextPath)
-                                        + path + " -> "
-                                        + wrapper.getServlet().getClass().getSimpleName()))));
+                host.contexts().forEach((contextPath, context) -> {
+                    System.out.println("context: [" + hostName + "]"
+                            + (contextPath.isEmpty() ? "/" : contextPath)
+                            + " docBase=" + context.getDocBase());
+                    context.mapper().mappings().forEach((path, wrapper) ->
+                            System.out.println("servlet: [" + hostName + "]"
+                                    + (contextPath.isEmpty() ? "" : contextPath)
+                                    + path + " -> "
+                                    + wrapper.getServlet().getClass().getSimpleName()));
+                }));
 
         while (true) {
             selector.select();

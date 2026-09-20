@@ -5,18 +5,15 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
- * 按请求 URI 从 webroot 读静态文件。Servlet 未命中时作为默认处理。
+ * 从当前 Context 的 docBase 读静态文件。Servlet 未命中时作为默认处理。
  */
 public class StaticResourceProcessor {
 
-    static final Path WEB_ROOT = Paths.get("webroot").toAbsolutePath().normalize();
-
-    public static void process(HttpRequest request, HttpResponse response) {
+    public static void process(HttpRequest request, HttpResponse response, Path docBase) {
         String path = uriToPath(request.getPathWithinContext());
-        Path file = resolveSafe(path);
+        Path file = resolveSafe(docBase, path);
 
         if (file == null) {
             notFound(response, path, 403, "Forbidden");
@@ -54,13 +51,11 @@ public class StaticResourceProcessor {
         return path;
     }
 
-    /**
-     * 把 URI 映射到 webroot 下的真实路径，拦住 .. 跳出目录。
-     */
-    private static Path resolveSafe(String uriPath) {
+    private static Path resolveSafe(Path docBase, String uriPath) {
+        Path root = docBase.toAbsolutePath().normalize();
         String relative = uriPath.startsWith("/") ? uriPath.substring(1) : uriPath;
-        Path file = WEB_ROOT.resolve(relative).normalize();
-        if (!file.startsWith(WEB_ROOT)) {
+        Path file = root.resolve(relative).normalize();
+        if (!file.startsWith(root)) {
             return null;
         }
         return file;

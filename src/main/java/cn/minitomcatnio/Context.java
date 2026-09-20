@@ -1,5 +1,7 @@
 package cn.minitomcatnio;
 
+import java.nio.file.Path;
+
 /**
  * 最小 Container：一个 web 应用。请求先走 Pipeline，最后一关才分发 Servlet。
  */
@@ -8,11 +10,17 @@ public class Context {
     private final Mapper mapper = new Mapper();
     private final SessionManager sessionManager = new SessionManager();
     private final Pipeline pipeline = new Pipeline();
+    private final Path docBase;
     private String path = "";
 
-    public Context() {
+    public Context(Path docBase) {
+        this.docBase = docBase.toAbsolutePath().normalize();
         pipeline.addValve(new AccessLogValve());
         pipeline.setBasic(new StandardContextValve(this));
+    }
+
+    public Path getDocBase() {
+        return docBase;
     }
 
     public String getPath() {
@@ -47,6 +55,6 @@ public class Context {
             match.wrapper.invoke(request, response);
             return;
         }
-        StaticResourceProcessor.process(request, response);
+        StaticResourceProcessor.process(request, response, docBase);
     }
 }
