@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Connector：NIO 连接、HTTP 解析、Keep-Alive。凑齐一条请求后交给 Context。
+ * Connector：NIO 连接、HTTP 解析、Keep-Alive。凑齐一条请求后交给 Engine。
  */
 public class Connector {
 
@@ -25,7 +25,7 @@ public class Connector {
     private static final int WORKER_THREADS = 8;
 
     private final int port;
-    private final Context context;
+    private final Engine engine;
     private final AtomicInteger workerSeq = new AtomicInteger();
     private final ExecutorService workers = Executors.newFixedThreadPool(WORKER_THREADS, r -> {
         Thread t = new Thread(r);
@@ -34,9 +34,9 @@ public class Connector {
         return t;
     });
 
-    public Connector(int port, Context context) {
+    public Connector(int port, Engine engine) {
         this.port = port;
-        this.context = context;
+        this.engine = engine;
     }
 
     public void start() throws IOException {
@@ -48,10 +48,16 @@ public class Connector {
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         System.out.println("Connector started on port " + port);
+        System.out.println("engine: " + engine.getName() + " defaultHost=" + engine.getDefaultHost());
         System.out.println("workers: " + WORKER_THREADS);
         System.out.println("webroot: " + StaticResourceProcessor.WEB_ROOT);
-        context.mapper().mappings().forEach((path, wrapper) ->
-                System.out.println("servlet: " + path + " -> " + wrapper.getServlet().getClass().getSimpleName()));
+        engine.hosts().forEach((hostName, host) ->
+                host.contexts().forEach((contextPath, context) ->
+                        context.mapper().mappings().forEach((path, wrapper) ->
+                                System.out.println("servlet: [" + hostName + "]"
+                                        + (contextPath.isEmpty() ? "" : contextPath)
+                                        + path + " -> "
+                                        + wrapper.getServlet().getClass().getSimpleName()))));
 
         while (true) {
             selector.select();
@@ -196,7 +202,7 @@ public class Connector {
     private void processRequest(SelectionKey key, HttpRequest request) {
         HttpResponse response = new HttpResponse();
         try {
-            context.invoke(request, response);
+            engine.invoke(request, response);
         } catch (Exception e) {
             System.out.println("处理请求失败: " + e.getMessage());
             response.setStatus(500, "Internal Server Error");

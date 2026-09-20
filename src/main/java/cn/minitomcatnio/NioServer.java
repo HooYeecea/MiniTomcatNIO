@@ -3,7 +3,7 @@ package cn.minitomcatnio;
 import java.io.IOException;
 
 /**
- * 启动入口：创建一个 Context，交给 Connector 监听。
+ * 启动入口：搭好 Engine / Host / Context，交给 Connector 监听。
  */
 public class NioServer {
 
@@ -17,7 +17,14 @@ public class NioServer {
         context.addServlet("/cookie", new CookieServlet());
         context.addServlet("/session", new SessionServlet());
 
-        Connector connector = new Connector(PORT, context);
+        Host host = new Host("localhost");
+        host.addContext("", context);
+
+        Engine engine = new Engine("Catalina");
+        engine.setDefaultHost("localhost");
+        engine.addHost(host);
+
+        Connector connector = new Connector(PORT, engine);
         connector.start();
     }
 }
