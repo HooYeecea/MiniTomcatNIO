@@ -8,32 +8,27 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Set;
 
 public class NioServer {
 
+    private static final int PORT = 8080;
+    /** HTTP 请求头上限。超过还没看到 \r\n\r\n，就当作非法请求。 */
+    private static final int HEADER_BUFFER_SIZE = 8192;
+
     public static void main(String[] args) throws IOException {
-        // 1. 打开 ServerSocketChannel
         ServerSocketChannel serverChannel = ServerSocketChannel.open();
-
-        // 2. 设置非阻塞（NIO 的关键一步）
         serverChannel.configureBlocking(false);
+        serverChannel.bind(new InetSocketAddress(PORT));
 
-        // 3. 绑定端口
-        serverChannel.bind(new InetSocketAddress(8080));
-
-        // 4. 打开 Selector
         Selector selector = Selector.open();
-
-        // 5. 把 serverChannel 注册到 Selector，关注"接受连接"事件
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-        System.out.println("NIO Server started on port 8080");
+        System.out.println("NIO HTTP Server started on port " + PORT);
 
-        // 6. 事件循环
         while (true) {
-            // 阻塞，直到至少有一个事件发生
             selector.select();
 
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -41,23 +36,35 @@ public class NioServer {
 
             while (it.hasNext()) {
                 SelectionKey key = it.next();
-                it.remove();  // 必须移除，否则下次 select 还会返回它
+                it.remove();
 
-                if (key.isAcceptable()) {
-                    handleAccept(key, selector);
-                } else if (key.isReadable()) {
-                    handleRead(key);
+                if (!key.isValid()) {
+                    continue;
+                }
+
+                try {
+                    if (key.isAcceptable()) {
+                        handleAccept(key, selector);
+                    } else if (key.isReadable()) {
+                        handleRead(key);
+                    } else if (key.isWritable()) {
+                        handleWrite(key);
+                    }
+                } catch (IOException e) {
+                    System.out.println("连接异常，关闭: " + e.getMessage());
+                    closeConnection(key);
                 }
             }
         }
     }
 
     /**
-     * 处理新连接（OP_ACCEPT 事件）
+     * 处理新连接（OP_ACCEPT）。
+     * 每个连接挂一份 Attachment：读缓冲要跨多次 read 拼请求头。
      */
     private static void handleAccept(SelectionKey key, Selector selector) throws IOException {
         ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
-        SocketChannel clientChannel = serverChannel.accept();  // 不会阻塞
+        SocketChannel clientChannel = serverChannel.accept();
 
         if (clientChannel == null) {
             return;
@@ -65,41 +72,153 @@ public class NioServer {
 
         System.out.println("新连接: " + clientChannel.getRemoteAddress());
 
-        // 新连接也要非阻塞，并注册到 Selector，关注"读"事件
         clientChannel.configureBlocking(false);
-        clientChannel.register(selector, SelectionKey.OP_READ);
+        Connection conn = new Connection();
+        clientChannel.register(selector, SelectionKey.OP_READ, conn);
     }
 
     /**
-     * 处理读事件（OP_READ 事件）
+     * 处理读事件（OP_READ）。
+     * 数据可能一次到不齐，所以先往 attachment 的 buffer 里攒，
+     * 直到出现请求头结束标记 \r\n\r\n。
      */
     private static void handleRead(SelectionKey key) throws IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        Connection conn = (Connection) key.attachment();
 
-        int bytesRead = clientChannel.read(buffer);
+        int bytesRead = clientChannel.read(conn.readBuffer);
 
         if (bytesRead == -1) {
-            // -1 表示客户端关闭了连接
             System.out.println("连接关闭: " + clientChannel.getRemoteAddress());
-            clientChannel.close();
-            key.cancel();
+            closeConnection(key);
             return;
         }
 
         if (bytesRead == 0) {
-            // 没有数据可读（非阻塞模式下可能出现）
             return;
         }
 
-        // 切换 buffer 到"读模式"：position=0, limit=bytesRead
-        buffer.flip();
+        int headerEnd = indexOfHeaderEnd(conn.readBuffer);
+        if (headerEnd < 0) {
+            if (!conn.readBuffer.hasRemaining()) {
+                System.out.println("请求头过大，拒绝");
+                prepareResponse(key, 400, "Bad Request: headers too large");
+            }
+            return;
+        }
 
-        byte[] data = new byte[buffer.remaining()];
-        buffer.get(data);
+        ParsedRequest request = parseRequest(conn.readBuffer, headerEnd);
+        if (request == null) {
+            prepareResponse(key, 400, "Bad Request");
+            return;
+        }
 
-        String message = new String(data);
-        System.out.println("收到数据 [" + bytesRead + " 字节]:");
-        System.out.println(message);
+        System.out.println("解析请求: " + request.method + " " + request.uri);
+
+        String body = "Hello NIO!\n"
+                + "method=" + request.method + "\n"
+                + "uri=" + request.uri + "\n";
+        prepareResponse(key, 200, body);
+    }
+
+    /**
+     * 处理写事件（OP_WRITE）。
+     * 一次 write 不一定能发完，buffer 还有 remaining 就下次继续写。
+     * 发完后关闭连接（这一步先不做 Keep-Alive）。
+     */
+    private static void handleWrite(SelectionKey key) throws IOException {
+        SocketChannel clientChannel = (SocketChannel) key.channel();
+        Connection conn = (Connection) key.attachment();
+
+        clientChannel.write(conn.writeBuffer);
+
+        if (!conn.writeBuffer.hasRemaining()) {
+            closeConnection(key);
+        }
+    }
+
+    /**
+     * 在已读字节里找请求头结束位置（第一个 \r 的下标）。
+     * buffer 此时仍是写模式：position = 已读长度。
+     */
+    private static int indexOfHeaderEnd(ByteBuffer buffer) {
+        byte[] arr = buffer.array();
+        int length = buffer.position();
+        for (int i = 0; i <= length - 4; i++) {
+            if (arr[i] == '\r' && arr[i + 1] == '\n'
+                    && arr[i + 2] == '\r' && arr[i + 3] == '\n') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 只解析请求行：METHOD URI VERSION。
+     * Header 字段这一步先读出来打印，还不做路由。
+     */
+    private static ParsedRequest parseRequest(ByteBuffer buffer, int headerEnd) {
+        byte[] arr = buffer.array();
+        String headerBlock = new String(arr, 0, headerEnd, StandardCharsets.ISO_8859_1);
+        String[] lines = headerBlock.split("\r\n");
+        if (lines.length == 0) {
+            return null;
+        }
+
+        String[] requestLine = lines[0].split(" ");
+        if (requestLine.length < 3) {
+            return null;
+        }
+
+        ParsedRequest request = new ParsedRequest();
+        request.method = requestLine[0];
+        request.uri = requestLine[1];
+        request.version = requestLine[2];
+
+        System.out.println("请求头:");
+        for (int i = 1; i < lines.length; i++) {
+            System.out.println("  " + lines[i]);
+        }
+        return request;
+    }
+
+    private static void prepareResponse(SelectionKey key, int status, String body) {
+        Connection conn = (Connection) key.attachment();
+        byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+
+        String reason = status == 200 ? "OK" : "Bad Request";
+        String header = "HTTP/1.1 " + status + " " + reason + "\r\n"
+                + "Content-Type: text/plain; charset=UTF-8\r\n"
+                + "Content-Length: " + bodyBytes.length + "\r\n"
+                + "Connection: close\r\n"
+                + "\r\n";
+        byte[] headerBytes = header.getBytes(StandardCharsets.ISO_8859_1);
+
+        conn.writeBuffer = ByteBuffer.allocate(headerBytes.length + bodyBytes.length);
+        conn.writeBuffer.put(headerBytes);
+        conn.writeBuffer.put(bodyBytes);
+        conn.writeBuffer.flip();
+
+        key.interestOps(SelectionKey.OP_WRITE);
+    }
+
+    private static void closeConnection(SelectionKey key) {
+        try {
+            key.channel().close();
+        } catch (IOException ignored) {
+        }
+        key.cancel();
+    }
+
+    /** 每个 SocketChannel 自己的读写缓冲，挂在 SelectionKey.attachment 上。 */
+    private static class Connection {
+        final ByteBuffer readBuffer = ByteBuffer.allocate(HEADER_BUFFER_SIZE);
+        ByteBuffer writeBuffer;
+    }
+
+    private static class ParsedRequest {
+        String method;
+        String uri;
+        String version;
     }
 }
