@@ -15,7 +15,7 @@ public class StaticResourceProcessor {
     static final Path WEB_ROOT = Paths.get("webroot").toAbsolutePath().normalize();
 
     public static void process(HttpRequest request, HttpResponse response) {
-        String path = uriToPath(request.getUri());
+        String path = uriToPath(request.getPathWithinContext());
         Path file = resolveSafe(path);
 
         if (file == null) {

@@ -22,7 +22,9 @@ public class Host {
     }
 
     public void addContext(String path, Context context) {
-        contexts.put(normalize(path), context);
+        String normalized = normalize(path);
+        context.setPath(normalized);
+        contexts.put(normalized, context);
     }
 
     public Map<String, Context> contexts() {

@@ -20,6 +20,7 @@ public class HttpRequest {
     private byte[] body = new byte[0];
     private String servletPath;
     private String pathInfo;
+    private String contextPath = "";
     private final Map<String, String> cookies = new LinkedHashMap<>();
     private SessionManager sessionManager;
     private HttpResponse response;
@@ -47,6 +48,30 @@ public class HttpRequest {
         int query = uri.indexOf('?');
         String path = query >= 0 ? uri.substring(0, query) : uri;
         return path.isEmpty() ? "/" : path;
+    }
+
+    public String getContextPath() {
+        return contextPath;
+    }
+
+    /** 去掉 Context 路径后的剩余路径，供该应用内部映射使用。 */
+    public String getPathWithinContext() {
+        String path = getPath();
+        if (contextPath == null || contextPath.isEmpty()) {
+            return path;
+        }
+        if (path.equals(contextPath)) {
+            return "/";
+        }
+        if (path.startsWith(contextPath + "/")) {
+            String rest = path.substring(contextPath.length());
+            return rest.isEmpty() ? "/" : rest;
+        }
+        return path;
+    }
+
+    void setContextPath(String contextPath) {
+        this.contextPath = contextPath == null ? "" : contextPath;
     }
 
     public String getServletPath() {

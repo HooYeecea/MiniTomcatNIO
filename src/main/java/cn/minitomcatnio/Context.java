@@ -8,10 +8,19 @@ public class Context {
     private final Mapper mapper = new Mapper();
     private final SessionManager sessionManager = new SessionManager();
     private final Pipeline pipeline = new Pipeline();
+    private String path = "";
 
     public Context() {
         pipeline.addValve(new AccessLogValve());
         pipeline.setBasic(new StandardContextValve(this));
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    void setPath(String path) {
+        this.path = path == null ? "" : path;
     }
 
     public void addServlet(String pattern, Servlet servlet) {
@@ -30,7 +39,8 @@ public class Context {
      * 基本阀调用：命中 Wrapper 则执行，否则走静态资源。
      */
     void service(HttpRequest request, HttpResponse response) {
-        Mapper.Match match = mapper.match(request.getPath());
+        request.setContextPath(path);
+        Mapper.Match match = mapper.match(request.getPathWithinContext());
         if (match != null) {
             request.setMapping(match.servletPath, match.pathInfo);
             request.bindSession(sessionManager, response);

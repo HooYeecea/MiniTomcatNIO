@@ -17,8 +17,12 @@ public class NioServer {
         context.addServlet("/cookie", new CookieServlet());
         context.addServlet("/session", new SessionServlet());
 
+        Context other = new Context();
+        other.addServlet("/ping", new PingServlet());
+
         Host host = new Host("localhost");
         host.addContext("", context);
+        host.addContext("/other", other);
 
         Engine engine = new Engine("Catalina");
         engine.setDefaultHost("localhost");
