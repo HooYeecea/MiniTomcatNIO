@@ -2,7 +2,9 @@ package cn.minitomcatnio;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,6 +15,7 @@ public class HttpResponse {
     private int status = 200;
     private String reason = "OK";
     private final Map<String, String> headers = new LinkedHashMap<>();
+    private final List<String> setCookies = new ArrayList<>();
     private byte[] body = new byte[0];
 
     public HttpResponse() {
@@ -26,6 +29,10 @@ public class HttpResponse {
 
     public void setHeader(String name, String value) {
         headers.put(name, value);
+    }
+
+    public void addCookie(String name, String value) {
+        setCookies.add(name + "=" + value);
     }
 
     public void setBody(String text) {
@@ -46,6 +53,9 @@ public class HttpResponse {
         headerBuilder.append("HTTP/1.1 ").append(status).append(' ').append(reason).append("\r\n");
         for (Map.Entry<String, String> header : headers.entrySet()) {
             headerBuilder.append(header.getKey()).append(": ").append(header.getValue()).append("\r\n");
+        }
+        for (String cookie : setCookies) {
+            headerBuilder.append("Set-Cookie: ").append(cookie).append("\r\n");
         }
         headerBuilder.append("\r\n");
 

@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 一次 HTTP 请求：请求行、Header、body，以及 query / 表单参数。
+ * 一次 HTTP 请求：请求行、Header、body、参数和 Cookie。
  */
 public class HttpRequest {
 
@@ -20,6 +20,7 @@ public class HttpRequest {
     private byte[] body = new byte[0];
     private String servletPath;
     private String pathInfo;
+    private final Map<String, String> cookies = new LinkedHashMap<>();
 
     private HttpRequest(String method, String uri, String version, Map<String, String> headers) {
         this.method = method;
@@ -27,6 +28,7 @@ public class HttpRequest {
         this.version = version;
         this.headers = headers;
         parseQueryString();
+        parseCookies();
     }
 
     public String getMethod() {
@@ -88,6 +90,10 @@ public class HttpRequest {
 
     public Map<String, String> getParameters() {
         return Collections.unmodifiableMap(parameters);
+    }
+
+    public String getCookie(String name) {
+        return cookies.get(name);
     }
 
     public byte[] getBody() {
@@ -171,6 +177,23 @@ public class HttpRequest {
             return;
         }
         parseUrlEncoded(uri.substring(query + 1));
+    }
+
+    private void parseCookies() {
+        String header = getHeader("cookie");
+        if (header == null || header.isEmpty()) {
+            return;
+        }
+        for (String part : header.split(";")) {
+            String piece = part.trim();
+            if (piece.isEmpty()) {
+                continue;
+            }
+            int eq = piece.indexOf('=');
+            String name = eq >= 0 ? piece.substring(0, eq).trim() : piece;
+            String value = eq >= 0 ? piece.substring(eq + 1).trim() : "";
+            cookies.putIfAbsent(name, value);
+        }
     }
 
     private void parseFormBody() {

@@ -37,6 +37,7 @@ public class NioServer {
         mapper.addServlet("/hello", new HelloServlet());
         mapper.addServlet("/echo", new EchoServlet());
         mapper.addServlet("/app/*", new AppServlet());
+        mapper.addServlet("/cookie", new CookieServlet());
 
         ServerSocketChannel serverChannel = ServerSocketChannel.open();
         serverChannel.configureBlocking(false);
