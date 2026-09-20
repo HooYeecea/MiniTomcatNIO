@@ -21,6 +21,8 @@ public class NioServer {
     private static final int PORT = 8080;
     /** HTTP 请求头上限。超过还没看到 \r\n\r\n，就当作非法请求。 */
     private static final int HEADER_BUFFER_SIZE = 8192;
+    /** 这一步只按 Content-Length 读 body，先限制大小。 */
+    private static final int MAX_BODY_SIZE = 1024 * 1024;
     private static final int WORKER_THREADS = 8;
     private static final Mapper mapper = new Mapper();
     private static final AtomicInteger workerSeq = new AtomicInteger();
@@ -33,6 +35,7 @@ public class NioServer {
 
     public static void main(String[] args) throws IOException {
         mapper.addServlet("/hello", new HelloServlet());
+        mapper.addServlet("/echo", new EchoServlet());
 
         ServerSocketChannel serverChannel = ServerSocketChannel.open();
         serverChannel.configureBlocking(false);
@@ -98,8 +101,7 @@ public class NioServer {
 
     /**
      * 处理读事件（OP_READ）。
-     * 数据可能一次到不齐，所以先往 attachment 的 buffer 里攒，
-     * 直到出现请求头结束标记 \r\n\r\n。
+     * 先拼请求头，再按 Content-Length 把 body 读齐，然后才交给 Worker。
      */
     private static void handleRead(SelectionKey key) throws IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
@@ -117,29 +119,88 @@ public class NioServer {
             return;
         }
 
-        int headerEnd = HttpRequest.indexOfHeaderEnd(conn.readBuffer);
-        if (headerEnd < 0) {
-            if (!conn.readBuffer.hasRemaining()) {
-                System.out.println("请求头过大，拒绝");
-                prepareResponse(key, 400, "Bad Request", "Bad Request: headers too large");
+        tryConsumeRequest(key);
+    }
+
+    /**
+     * 用当前 readBuffer 里已有的字节尝试凑齐一条请求。
+     * Keep-Alive 写完后，buffer 里可能已经有下一次请求的数据。
+     */
+    private static void tryConsumeRequest(SelectionKey key) {
+        Connection conn = (Connection) key.attachment();
+
+        if (conn.pendingRequest == null) {
+            int headerEnd = HttpRequest.indexOfHeaderEnd(conn.readBuffer);
+            if (headerEnd < 0) {
+                if (!conn.readBuffer.hasRemaining()) {
+                    System.out.println("请求头过大，拒绝");
+                    prepareResponse(key, 400, "Bad Request", "Bad Request: headers too large");
+                }
+                return;
             }
+
+            HttpRequest request = HttpRequest.parse(conn.readBuffer, headerEnd);
+            if (request == null) {
+                prepareResponse(key, 400, "Bad Request", "Bad Request");
+                return;
+            }
+
+            int contentLength = request.getContentLength();
+            if (contentLength < 0) {
+                prepareResponse(key, 400, "Bad Request", "Bad Request: invalid Content-Length");
+                return;
+            }
+            if (contentLength > MAX_BODY_SIZE) {
+                prepareResponse(key, 413, "Payload Too Large", "Payload Too Large");
+                return;
+            }
+
+            System.out.println("解析请求: " + request.getMethod() + " " + request.getUri()
+                    + " content-length=" + contentLength);
+            for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
+                System.out.println("  " + header.getKey() + ": " + header.getValue());
+            }
+
+            conn.pendingRequest = request;
+            conn.headerEnd = headerEnd;
+            conn.contentLength = contentLength;
+            ensureReadCapacity(conn, headerEnd + 4 + contentLength);
+        }
+
+        int needed = conn.headerEnd + 4 + conn.contentLength;
+        if (conn.readBuffer.position() < needed) {
             return;
         }
 
-        HttpRequest request = HttpRequest.parse(conn.readBuffer, headerEnd);
-        if (request == null) {
-            prepareResponse(key, 400, "Bad Request", "Bad Request");
-            return;
+        HttpRequest request = conn.pendingRequest;
+        byte[] body = new byte[conn.contentLength];
+        if (conn.contentLength > 0) {
+            System.arraycopy(conn.readBuffer.array(), conn.headerEnd + 4, body, 0, conn.contentLength);
         }
+        request.setBody(body);
 
-        System.out.println("解析请求: " + request.getMethod() + " " + request.getUri());
-        for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
-            System.out.println("  " + header.getKey() + ": " + header.getValue());
-        }
+        ByteBuffer buf = conn.readBuffer;
+        buf.limit(buf.position());
+        buf.position(needed);
+        buf.compact();
 
-        // 头已经齐了：暂停读，业务交给 Worker，避免堵住 Selector。
+        conn.pendingRequest = null;
+        conn.headerEnd = -1;
+        conn.contentLength = 0;
+
         key.interestOps(0);
         workers.execute(() -> processRequest(key, request));
+    }
+
+    private static void ensureReadCapacity(Connection conn, int needed) {
+        ByteBuffer buf = conn.readBuffer;
+        if (buf.capacity() >= needed) {
+            return;
+        }
+        ByteBuffer grown = ByteBuffer.allocate(needed);
+        buf.flip();
+        grown.put(buf);
+        conn.readBuffer = grown;
     }
 
     /**
@@ -172,7 +233,7 @@ public class NioServer {
     /**
      * 处理写事件（OP_WRITE）。
      * 一次 write 不一定能发完，buffer 还有 remaining 就下次继续写。
-     * 发完后：Keep-Alive 则清空缓冲继续读，否则关连接。
+     * 发完后：Keep-Alive 则继续读（buffer 里可能已有下一次请求的剩余字节），否则关连接。
      */
     private static void handleWrite(SelectionKey key) throws IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
@@ -182,10 +243,12 @@ public class NioServer {
 
         if (!conn.writeBuffer.hasRemaining()) {
             if (conn.keepAlive) {
-                conn.readBuffer.clear();
                 conn.writeBuffer = null;
                 conn.keepAlive = false;
                 key.interestOps(SelectionKey.OP_READ);
+                if (conn.readBuffer.position() > 0) {
+                    tryConsumeRequest(key);
+                }
             } else {
                 closeConnection(key);
             }
@@ -226,9 +289,12 @@ public class NioServer {
 
     /** 每个 SocketChannel 自己的读写缓冲，挂在 SelectionKey.attachment 上。 */
     private static class Connection {
-        final ByteBuffer readBuffer = ByteBuffer.allocate(HEADER_BUFFER_SIZE);
+        ByteBuffer readBuffer = ByteBuffer.allocate(HEADER_BUFFER_SIZE);
         volatile ByteBuffer writeBuffer;
         volatile boolean keepAlive;
+        HttpRequest pendingRequest;
+        int headerEnd = -1;
+        int contentLength;
     }
 
 }

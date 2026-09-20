@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 一次 HTTP 请求的解析结果。这一步只负责把头拆开，不处理 body。
+ * 一次 HTTP 请求的解析结果：请求行、Header，以及 Content-Length 指定的 body。
  */
 public class HttpRequest {
 
@@ -15,6 +15,7 @@ public class HttpRequest {
     private final String uri;
     private final String version;
     private final Map<String, String> headers;
+    private byte[] body = new byte[0];
 
     private HttpRequest(String method, String uri, String version, Map<String, String> headers) {
         this.method = method;
@@ -59,6 +60,33 @@ public class HttpRequest {
 
     public Map<String, String> getHeaders() {
         return Collections.unmodifiableMap(headers);
+    }
+
+    public byte[] getBody() {
+        return body;
+    }
+
+    public String getBodyAsString() {
+        return new String(body, StandardCharsets.UTF_8);
+    }
+
+    void setBody(byte[] body) {
+        this.body = body == null ? new byte[0] : body;
+    }
+
+    /**
+     * 没有 Content-Length 时当作 0。非法值返回 -1。
+     */
+    public int getContentLength() {
+        String value = getHeader("content-length");
+        if (value == null || value.isEmpty()) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     /**
