@@ -2,7 +2,7 @@
 <web-app>
     <servlet>
         <servlet-name>ping</servlet-name>
-        <servlet-class>cn.minitomcatnio.PingServlet</servlet-class>
+        <servlet-class>cn.minitomcatnio.demo.PingServlet</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>ping</servlet-name>

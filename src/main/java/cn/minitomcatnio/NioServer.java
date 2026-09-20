@@ -1,5 +1,10 @@
 package cn.minitomcatnio;
 
+import cn.minitomcatnio.connector.Connector;
+import cn.minitomcatnio.container.Context;
+import cn.minitomcatnio.container.Engine;
+import cn.minitomcatnio.container.Host;
+
 import java.io.IOException;
 import java.nio.file.Path;
 

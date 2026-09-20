@@ -2,27 +2,27 @@
 <web-app>
     <servlet>
         <servlet-name>hello</servlet-name>
-        <servlet-class>cn.minitomcatnio.HelloServlet</servlet-class>
+        <servlet-class>cn.minitomcatnio.demo.HelloServlet</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>echo</servlet-name>
-        <servlet-class>cn.minitomcatnio.EchoServlet</servlet-class>
+        <servlet-class>cn.minitomcatnio.demo.EchoServlet</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>app</servlet-name>
-        <servlet-class>cn.minitomcatnio.AppServlet</servlet-class>
+        <servlet-class>cn.minitomcatnio.demo.AppServlet</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>cookie</servlet-name>
-        <servlet-class>cn.minitomcatnio.CookieServlet</servlet-class>
+        <servlet-class>cn.minitomcatnio.demo.CookieServlet</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>session</servlet-name>
-        <servlet-class>cn.minitomcatnio.SessionServlet</servlet-class>
+        <servlet-class>cn.minitomcatnio.demo.SessionServlet</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>forward</servlet-name>
-        <servlet-class>cn.minitomcatnio.ForwardServlet</servlet-class>
+        <servlet-class>cn.minitomcatnio.demo.ForwardServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -51,7 +51,7 @@
     </servlet-mapping>
     <filter>
         <filter-name>log</filter-name>
-        <filter-class>cn.minitomcatnio.LogFilter</filter-class>
+        <filter-class>cn.minitomcatnio.demo.LogFilter</filter-class>
     </filter>
     <filter-mapping>
         <filter-name>log</filter-name>

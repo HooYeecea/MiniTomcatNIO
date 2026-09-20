@@ -37,3 +37,7 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Deployed app classes (copy from target/classes after build) ###
+webapps/*/WEB-INF/classes/
+webapps/*/WEB-INF/lib/
