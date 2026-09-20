@@ -27,6 +27,7 @@ public class NioServer {
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         System.out.println("NIO HTTP Server started on port " + PORT);
+        System.out.println("webroot: " + StaticResourceProcessor.WEB_ROOT);
 
         while (true) {
             selector.select();
@@ -118,10 +119,9 @@ public class NioServer {
             System.out.println("  " + header.getKey() + ": " + header.getValue());
         }
 
-        String body = "Hello NIO!\n"
-                + "method=" + request.getMethod() + "\n"
-                + "uri=" + request.getUri() + "\n";
-        prepareResponse(key, 200, "OK", body);
+        HttpResponse response = new HttpResponse();
+        StaticResourceProcessor.process(request, response);
+        send(key, response);
     }
 
     /**
@@ -141,10 +141,14 @@ public class NioServer {
     }
 
     private static void prepareResponse(SelectionKey key, int status, String reason, String body) {
-        Connection conn = (Connection) key.attachment();
         HttpResponse response = new HttpResponse();
         response.setStatus(status, reason);
         response.setBody(body);
+        send(key, response);
+    }
+
+    private static void send(SelectionKey key, HttpResponse response) {
+        Connection conn = (Connection) key.attachment();
         conn.writeBuffer = response.toByteBuffer();
         key.interestOps(SelectionKey.OP_WRITE);
     }

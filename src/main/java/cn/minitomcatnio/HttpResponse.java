@@ -30,7 +30,11 @@ public class HttpResponse {
     }
 
     public void setBody(String text) {
-        this.body = text.getBytes(StandardCharsets.UTF_8);
+        setBody(text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public void setBody(byte[] body) {
+        this.body = body == null ? new byte[0] : body;
     }
 
     /**
