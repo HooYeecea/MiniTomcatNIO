@@ -31,6 +31,13 @@ public class HttpRequest {
         return uri;
     }
 
+    /** 去掉 query string 后的路径，供 Servlet 映射使用。 */
+    public String getPath() {
+        int query = uri.indexOf('?');
+        String path = query >= 0 ? uri.substring(0, query) : uri;
+        return path.isEmpty() ? "/" : path;
+    }
+
     public String getVersion() {
         return version;
     }

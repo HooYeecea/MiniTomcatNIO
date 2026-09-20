@@ -17,8 +17,11 @@ public class NioServer {
     private static final int PORT = 8080;
     /** HTTP 请求头上限。超过还没看到 \r\n\r\n，就当作非法请求。 */
     private static final int HEADER_BUFFER_SIZE = 8192;
+    private static final Mapper mapper = new Mapper();
 
     public static void main(String[] args) throws IOException {
+        mapper.addServlet("/hello", new HelloServlet());
+
         ServerSocketChannel serverChannel = ServerSocketChannel.open();
         serverChannel.configureBlocking(false);
         serverChannel.bind(new InetSocketAddress(PORT));
@@ -28,6 +31,8 @@ public class NioServer {
 
         System.out.println("NIO HTTP Server started on port " + PORT);
         System.out.println("webroot: " + StaticResourceProcessor.WEB_ROOT);
+        mapper.mappings().forEach((path, servlet) ->
+                System.out.println("servlet: " + path + " -> " + servlet.getClass().getSimpleName()));
 
         while (true) {
             selector.select();
@@ -120,7 +125,19 @@ public class NioServer {
         }
 
         HttpResponse response = new HttpResponse();
-        StaticResourceProcessor.process(request, response);
+        try {
+            Servlet servlet = mapper.match(request.getPath());
+            if (servlet != null) {
+                servlet.service(request, response);
+            } else {
+                StaticResourceProcessor.process(request, response);
+            }
+        } catch (Exception e) {
+            System.out.println("处理请求失败: " + e.getMessage());
+            response.setStatus(500, "Internal Server Error");
+            response.setHeader("Content-Type", "text/plain; charset=UTF-8");
+            response.setBody("500 Internal Server Error");
+        }
         send(key, response);
     }
 

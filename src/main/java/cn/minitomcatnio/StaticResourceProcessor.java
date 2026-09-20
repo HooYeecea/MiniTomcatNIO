@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * 按请求 URI 从 webroot 读静态文件。这一步还没有 Servlet，只做默认资源映射。
+ * 按请求 URI 从 webroot 读静态文件。Servlet 未命中时作为默认处理。
  */
 public class StaticResourceProcessor {
 
