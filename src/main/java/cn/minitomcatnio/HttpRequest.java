@@ -18,6 +18,8 @@ public class HttpRequest {
     private final Map<String, String> headers;
     private final Map<String, String> parameters = new LinkedHashMap<>();
     private byte[] body = new byte[0];
+    private String servletPath;
+    private String pathInfo;
 
     private HttpRequest(String method, String uri, String version, Map<String, String> headers) {
         this.method = method;
@@ -40,6 +42,20 @@ public class HttpRequest {
         int query = uri.indexOf('?');
         String path = query >= 0 ? uri.substring(0, query) : uri;
         return path.isEmpty() ? "/" : path;
+    }
+
+    public String getServletPath() {
+        return servletPath;
+    }
+
+    /** 前缀映射多出来的路径，例如 /app/* 匹配 /app/user 时为 /user。 */
+    public String getPathInfo() {
+        return pathInfo;
+    }
+
+    void setMapping(String servletPath, String pathInfo) {
+        this.servletPath = servletPath;
+        this.pathInfo = pathInfo;
     }
 
     public String getVersion() {

@@ -36,6 +36,7 @@ public class NioServer {
     public static void main(String[] args) throws IOException {
         mapper.addServlet("/hello", new HelloServlet());
         mapper.addServlet("/echo", new EchoServlet());
+        mapper.addServlet("/app/*", new AppServlet());
 
         ServerSocketChannel serverChannel = ServerSocketChannel.open();
         serverChannel.configureBlocking(false);
@@ -209,9 +210,10 @@ public class NioServer {
     private static void processRequest(SelectionKey key, HttpRequest request) {
         HttpResponse response = new HttpResponse();
         try {
-            Servlet servlet = mapper.match(request.getPath());
-            if (servlet != null) {
-                servlet.service(request, response);
+            Mapper.Match match = mapper.match(request.getPath());
+            if (match != null) {
+                request.setMapping(match.servletPath, match.pathInfo);
+                match.servlet.service(request, response);
             } else {
                 StaticResourceProcessor.process(request, response);
             }
