@@ -31,6 +31,14 @@
         <servlet-name>wrap</servlet-name>
         <servlet-class>cn.minitomcatnio.demo.WrapServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>boom</servlet-name>
+        <servlet-class>cn.minitomcatnio.demo.BoomServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>error</servlet-name>
+        <servlet-class>cn.minitomcatnio.demo.ErrorServlet</servlet-class>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>hello</servlet-name>
@@ -60,6 +68,18 @@
         <servlet-name>wrap</servlet-name>
         <url-pattern>/wrap</url-pattern>
     </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>boom</servlet-name>
+        <url-pattern>/boom</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>error</servlet-name>
+        <url-pattern>/error</url-pattern>
+    </servlet-mapping>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/error</location>
+    </error-page>
     <filter>
         <filter-name>log</filter-name>
         <filter-class>cn.minitomcatnio.demo.LogFilter</filter-class>

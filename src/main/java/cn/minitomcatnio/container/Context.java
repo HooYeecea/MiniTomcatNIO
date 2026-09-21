@@ -1,5 +1,6 @@
 package cn.minitomcatnio.container;
 
+import cn.minitomcatnio.servlet.ApplicationDispatcher;
 import cn.minitomcatnio.servlet.ApplicationFilterChain;
 import cn.minitomcatnio.servlet.Filter;
 import cn.minitomcatnio.http.HttpRequest;
@@ -13,11 +14,13 @@ import cn.minitomcatnio.loader.WebappClassLoader;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * ĂÂĂÂĂÂĂĹĂÂ°ĂÂ ContainerĂÂÄšĹĂÂÄÂ¤ĂÂ¸ĂÂÄÂ¤ĂÂ¸ÄšÂ web ĂĹÄšÂĂÂÄÂ§ĂÂĂÂ¨ĂÂĂÂĂÂĂÂÄšĹĽĂÂĂÂĂÂĂÂĂĹĂÂĂÂĂÂĂĹžĂÂ° PipelineĂÂÄšĹĂÂĂÂĂÂĂÂĂĹĂÂĂÂÄÂ¤ĂÂ¸ĂÂĂĹĂÂÄšÂĂÂĂÂĂÂĂĹĂÂĂÂĂĹĂÂĂÂ ServletĂÂĂÂĂÂ
+ * ÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂ°ÄÂĂÂ ContainerÄÂĂÂĂĹĄÄšÂÄÂĂÂĂÂĂÂ¤ÄÂĂÂ¸ÄÂĂÂĂÂĂÂ¤ÄÂĂÂ¸ĂĹĄĂÂ web ÄÂÄšÂĂĹĄĂÂÄÂĂÂĂÂĂÂ§ÄÂĂÂÄÂĂÂ¨ÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂĂĹĄÄšÄ˝ÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšĹžÄÂĂÂ° PipelineÄÂĂÂĂĹĄÄšÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂĂÂĂÂ¤ÄÂĂÂ¸ÄÂĂÂÄÂÄšÂÄÂĂÂĂĹĄĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂ ServletÄÂĂÂÄÂĂÂÄÂĂÂ
  */
 public class Context {
 
@@ -29,6 +32,7 @@ public class Context {
     private String path = "";
     private final List<FilterMapping> filterMappings = new ArrayList<>();
     private final List<ServletContextListener> listeners = new ArrayList<>();
+    private final Map<Integer, String> errorPages = new HashMap<>();
     private boolean stopped;
 
     public Context(Path docBase) {
@@ -68,6 +72,10 @@ public class Context {
         listeners.add(listener);
     }
 
+    public void addErrorPage(int status, String location) {
+        errorPages.put(status, location);
+    }
+
     public Mapper mapper() {
         return mapper;
     }
@@ -77,7 +85,7 @@ public class Context {
     }
 
     /**
-     * web.xml ĂÂÄšÂĂÂĂĹÄšËĂÂĂĹĂÂĂÂĂĹĂÂĂÂĂĹĂÂ§ĂÂĂĹĂÂĂÂĂÂÄšĹĽĂÂÄÂ¤ĂÂ¸ÄšÂ Servlet / FilterĂÂÄšĹĂÂĂĹĂÂĂÂÄÂ¤ĂÂ¸ĂÂĂĹÄšËĂÂÄÂ¤ÄšĹžĂÂĂĹĂÂÄšÂ init ÄÂ¤ĂÂ¸ĂÂĂÂÄšĹĄĂÂĂÂĂÂĂÂ
+     * web.xml ÄÂĂÂĂĹĄĂÂÄÂĂÂÄÂÄšÂĂĹĄĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂ§ÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂÄÂĂÂĂĹĄÄšÄ˝ÄÂĂÂĂÂĂÂ¤ÄÂĂÂ¸ĂĹĄĂÂ Servlet / FilterÄÂĂÂĂĹĄÄšÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂĂÂĂÂ¤ÄÂĂÂ¸ÄÂĂÂÄÂÄšÂĂĹĄĂÂÄÂĂÂĂÂĂÂ¤ĂĹĄÄšĹžÄÂĂÂÄÂÄšÂÄÂĂÂĂĹĄĂÂ init ĂÂĂÂ¤ÄÂĂÂ¸ÄÂĂÂÄÂĂÂĂĹĄÄšÄÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ
      */
     private void start() {
         for (ServletContextListener listener : listeners) {
@@ -99,7 +107,7 @@ public class Context {
     }
 
     /**
-     * 先 destroy Servlet / Filter，再通知 listener。规范要求 listener 看到的是已销毁的组件。
+     * ĺ destroy Servlet / FilterďźĺéçĽ listenerăč§ččŚćą listener çĺ°çćŻĺˇ˛éćŻççťäťśă
      */
     public void stop() {
         if (stopped) {
@@ -126,7 +134,7 @@ public class Context {
     }
 
     /**
-     * ĂĹĂÂÄšÂĂÂĂÂÄšĹĄÄĹ ĂÂĂÂĂÂĂÂ°ĂÂÄÂ§ĂÂĂÂ¨ĂÂÄšĹĂÂĂĹĂÂĂÂÄÂ¤ĂÂ¸ĂÂ­ Wrapper ĂĹĂÂĂÂĂÂĂÂĂÂ§ĂÂĂÂĂÂĂÂÄšĹĂÂĂĹĂÂÄšÂĂĹĂÂĂÂĂÂĂĹžĂÂ°ÄĹ ĂÂĂÂĂÂĂÂĂÂĂÂĂĹžĂÂĂÂÄšÂĂÂĂÂĂÂĂÂ
+     * ÄÂÄšÂÄÂĂÂĂĹĄĂÂÄÂĂÂÄÂĂÂĂĹĄÄšÄĂÂÄšÂ ÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ°ÄÂĂÂĂÂĂÂ§ÄÂĂÂÄÂĂÂ¨ÄÂĂÂĂĹĄÄšÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂĂÂĂÂ¤ÄÂĂÂ¸ÄÂĂÂ­ Wrapper ÄÂÄšÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ§ÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂĂĹĄÄšÂÄÂĂÂÄÂÄšÂÄÂĂÂĂĹĄĂÂÄÂÄšÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšĹžÄÂĂÂ°ĂÂÄšÂ ÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšĹžÄÂĂÂÄÂĂÂĂĹĄĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ
      */
     void service(HttpRequest request, HttpResponse response) {
         request.setContextPath(path);
@@ -136,17 +144,42 @@ public class Context {
     }
 
     /**
-     * ĂĹĂÂĂÂ¨ĂĹĂÂĂÂĂĹĂÂĂÂ Context ĂĹĂÂĂÂĂĹĂÂĂÂĂĹĂÂĂÂĂÂĂÂĂÂforward ÄÂ¤ÄšÄĂÂÄÂ¤ÄšĹĂÂĂĹĂÂĂÂĂÂĂĹžĂÂ°ĂÂÄšĹşĂÂÄĹ ĂÂĂÂĂÂĂÂĂÂ
+     * ÄÂÄšÂÄÂĂÂÄÂĂÂ¨ÄÂÄšÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂ Context ÄÂÄšÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂforward ĂÂĂÂ¤ĂĹĄĂÂÄÂĂÂĂÂĂÂ¤ĂĹĄÄšÂÄÂĂÂÄÂÄšÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂÄšĹžÄÂĂÂ°ÄÂĂÂĂĹĄÄšĹÄÂĂÂĂÂÄšÂ ÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂÄÂĂÂ
      */
     public void dispatch(HttpRequest request, HttpResponse response) {
-        Mapper.Match match = mapper.match(request.getPathWithinContext());
-        if (match != null) {
-            request.setMapping(match.servletPath, match.pathInfo);
-            List<Filter> filters = matchingFilters(request.getPathWithinContext());
-            new ApplicationFilterChain(filters, match.wrapper).doFilter(request, response);
-            return;
+        try {
+            Mapper.Match match = mapper.match(request.getPathWithinContext());
+            if (match != null) {
+                request.setMapping(match.servletPath, match.pathInfo);
+                List<Filter> filters = matchingFilters(request.getPathWithinContext());
+                new ApplicationFilterChain(filters, match.wrapper).doFilter(request, response);
+                return;
+            }
+            StaticResourceProcessor.process(request, response, docBase);
+        } catch (Exception e) {
+            if (!sendErrorPage(request, response, e)) {
+                if (e instanceof RuntimeException runtime) {
+                    throw runtime;
+                }
+                throw new IllegalStateException(e);
+            }
         }
-        StaticResourceProcessor.process(request, response, docBase);
+    }
+
+    /** 按 web.xml 的 error-page 转发。forward 会把状态重置成 200，结束后再写回 500。 */
+    private boolean sendErrorPage(HttpRequest request, HttpResponse response, Exception error) {
+        if (request.isErrorDispatch()) {
+            return false;
+        }
+        String location = errorPages.get(500);
+        if (location == null) {
+            return false;
+        }
+        System.out.println("error-page 500 -> " + location + ": " + error);
+        request.setErrorDispatch(true);
+        new ApplicationDispatcher(this, location).forward(request, response);
+        response.setStatus(500, "Internal Server Error");
+        return true;
     }
 
     private List<Filter> matchingFilters(String pathWithinContext) {

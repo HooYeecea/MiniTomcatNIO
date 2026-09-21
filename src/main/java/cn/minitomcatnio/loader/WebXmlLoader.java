@@ -80,6 +80,14 @@ public class WebXmlLoader {
                 }
                 context.addFilter(pattern, filter);
             }
+
+            NodeList errorPageNodes = document.getElementsByTagName("error-page");
+            for (int i = 0; i < errorPageNodes.getLength(); i++) {
+                Element errorPage = (Element) errorPageNodes.item(i);
+                int status = Integer.parseInt(text(errorPage, "error-code"));
+                String location = text(errorPage, "location");
+                context.addErrorPage(status, location);
+            }
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load " + webXml, e);
         }

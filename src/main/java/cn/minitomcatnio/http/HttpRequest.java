@@ -15,7 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * ä¸ćŹĄ HTTP čŻˇćąďźčŻˇćąčĄăHeaderăbodyăĺć°ĺ Cookieă
+ * Ă¤Â¸ÂÄĹšÄ HTTP ÄĹťËÄÄÂÄĹşÂÄĹťËÄÄÂÄÄÂÄÂÂHeaderÄÂÂbodyÄÂÂÄşÂÂÄÂÂ°ÄşÂÂ CookieÄÂÂ
  */
 public class HttpRequest {
 
@@ -33,8 +33,10 @@ public class HttpRequest {
     private HttpResponse response;
     private HttpSession session;
     private Context context;
-    /** forward ĺčŚçĺşç¨ĺčˇŻĺžďźćŞ forward ćśä¸ş nullă */
+    /** forward ÄşÂÂÄĹÂĂ§ÂÂÄşĹÂĂ§ÂÂ¨ÄşÂÂÄËĹťÄşĹžÂÄĹşÂÄÂĹ forward ÄÂĹĂ¤Â¸Ĺ nullÄÂÂ */
     private String dispatchedPath;
+    /** 正在派发 error-page，避免错误页自己再抛异常时死循环。 */
+    private boolean errorDispatch;
 
     private HttpRequest(String method, String uri, String version, Map<String, String> headers) {
         this.method = method;
@@ -53,7 +55,7 @@ public class HttpRequest {
         return uri;
     }
 
-    /** ĺťć query string ĺçčˇŻĺžďźäž Servlet ć ĺ°ä˝żç¨ă */
+    /** ÄşÂĹĽÄÂÂ query string ÄşÂÂĂ§ÂÂÄËĹťÄşĹžÂÄĹşÂĂ¤ĹžÂ Servlet ÄÂÂ ÄşÂ°ÂĂ¤ËĹźĂ§ÂÂ¨ÄÂÂ */
     public String getPath() {
         int query = uri.indexOf('?');
         String path = query >= 0 ? uri.substring(0, query) : uri;
@@ -64,7 +66,7 @@ public class HttpRequest {
         return contextPath;
     }
 
-    /** ĺťć Context čˇŻĺžĺçĺŠä˝čˇŻĺžďźäžčŻĽĺşç¨ĺé¨ć ĺ°ä˝żç¨ă */
+    /** ÄşÂĹĽÄÂÂ Context ÄËĹťÄşĹžÂÄşÂÂĂ§ÂÂÄşÂĹ Ă¤ËÂÄËĹťÄşĹžÂÄĹşÂĂ¤ĹžÂÄĹťÄ˝ÄşĹÂĂ§ÂÂ¨ÄşÂÂĂŠÂÂ¨ÄÂÂ ÄşÂ°ÂĂ¤ËĹźĂ§ÂÂ¨ÄÂÂ */
     public String getPathWithinContext() {
         if (dispatchedPath != null) {
             return dispatchedPath;
@@ -95,6 +97,14 @@ public class HttpRequest {
         return dispatchedPath;
     }
 
+    public boolean isErrorDispatch() {
+        return errorDispatch;
+    }
+
+    public void setErrorDispatch(boolean errorDispatch) {
+        this.errorDispatch = errorDispatch;
+    }
+
     public void bindContext(Context context) {
         this.context = context;
     }
@@ -110,7 +120,7 @@ public class HttpRequest {
         return servletPath;
     }
 
-    /** ĺçźć ĺ°ĺ¤ĺşćĽçčˇŻĺžďźäžĺŚ /app/* ĺšé /app/user ćśä¸ş /useră */
+    /** ÄşÂÂĂ§ĹşÂÄÂÂ ÄşÂ°ÂÄşÂ¤ÂÄşÂĹÄÂÄ˝Ă§ÂÂÄËĹťÄşĹžÂÄĹşÂĂ¤ĹžÂÄşĹÂ /app/* ÄşÂĹĄĂŠÂÂ /app/user ÄÂĹĂ¤Â¸Ĺ /userÄÂÂ */
     public String getPathInfo() {
         return pathInfo;
     }
@@ -129,7 +139,7 @@ public class HttpRequest {
     }
 
     /**
-     * HTTP/1.1 éťčŽ¤äżć´ťďźHTTP/1.0 éťčŽ¤ĺłé­ďźčŻˇćąĺ¤´ Connection ĺŻäťĽčŚçă
+     * HTTP/1.1 ĂŠĹĽÂÄĹ˝Â¤Ă¤ĹźÂÄÂ´ĹĽÄĹşÂHTTP/1.0 ĂŠĹĽÂÄĹ˝Â¤ÄşÂĹĂŠÂÂ­ÄĹşÂÄĹťËÄÄÂÄşÂ¤Â´ Connection ÄşÂĹťĂ¤ĹĽÄ˝ÄĹÂĂ§ÂÂÄÂÂ
      */
     public boolean shouldKeepAlive() {
         String connection = getHeader("connection");
@@ -143,7 +153,7 @@ public class HttpRequest {
         return Collections.unmodifiableMap(headers);
     }
 
-    /** ĺĺĺć°ĺŞäżççŹŹä¸ćŹĄĺşç°çĺźă */
+    /** ÄşÂÂÄşÂÂÄşÂÂÄÂÂ°ÄşÂĹĂ¤ĹźÂĂ§ÂÂĂ§ĹšĹšĂ¤Â¸ÂÄĹšÄÄşÂĹĂ§ÂÂ°Ă§ÂÂÄşÂĹşÄÂÂ */
     public String getParameter(String name) {
         return parameters.get(name);
     }
@@ -162,7 +172,7 @@ public class HttpRequest {
     }
 
     /**
-     * ć Cookie éç JSESSIONID ĺ Sessionďźć˛Ąćĺ°ąć°ĺťşĺšś Set-Cookieă
+     * ÄÂÂ Cookie ĂŠÂÂĂ§ÂÂ JSESSIONID ÄşÂÂ SessionÄĹşÂÄËÄÄÂÂÄşÂ°ÄÄÂÂ°ÄşĹĽĹÄşĹĄĹ Set-CookieÄÂÂ
      */
     public HttpSession getSession() {
         if (session != null) {
@@ -190,7 +200,7 @@ public class HttpRequest {
     }
 
     /**
-     * ć˛Ąć Content-Length ćśĺ˝ä˝ 0ăéćłĺźčżĺ -1ă
+     * ÄËÄÄÂÂ Content-Length ÄÂĹÄşËÂĂ¤ËÂ 0ÄÂÂĂŠÂÂÄĹÂÄşÂĹşÄĹźÂÄşÂÂ -1ÄÂÂ
      */
     public int getContentLength() {
         String value = getHeader("content-length");
@@ -205,8 +215,8 @@ public class HttpRequest {
     }
 
     /**
-     * ĺ¨ĺˇ˛čŻťĺ­čéćžčŻˇćąĺ¤´çťćä˝ç˝ŽďźçŹŹä¸ä¸Ş \\r çä¸ć ďźă
-     * buffer ć­¤ćśäťćŻĺć¨Ąĺźďźposition = ĺˇ˛čŻťéżĺşŚă
+     * ÄşÂÂ¨ÄşËËÄĹťĹĽÄşÂ­ÂÄÂÂĂŠÂÂÄÂĹžÄĹťËÄÄÂÄşÂ¤Â´Ă§ĹĽÂÄÂÂĂ¤ËÂĂ§ËĹ˝ÄĹşÂĂ§ĹšĹšĂ¤Â¸ÂĂ¤Â¸Ĺ \\r Ă§ÂÂĂ¤Â¸ÂÄÂ ÂÄĹşÂÄÂÂ
+     * buffer ÄÂ­Â¤ÄÂĹĂ¤ĹĽÂÄÂĹťÄşÂÂÄÂ¨ÄÄşĹşÂÄĹşÂposition = ÄşËËÄĹťĹĽĂŠÂĹźÄşĹĹÄÂÂ
      */
     public static int indexOfHeaderEnd(ByteBuffer buffer) {
         byte[] arr = buffer.array();
@@ -221,7 +231,7 @@ public class HttpRequest {
     }
 
     /**
-     * č§ŁćčŻˇćąčĄĺ Headerăć źĺźä¸ĺŻšćśčżĺ nullă
+     * ÄÂ§ĹÄÂÂÄĹťËÄÄÂÄÄÂÄşÂÂ HeaderÄÂÂÄÂ ĹşÄşĹşÂĂ¤Â¸ÂÄşĹťĹĄÄÂĹÄĹźÂÄşÂÂ nullÄÂÂ
      */
     public static HttpRequest parse(ByteBuffer buffer, int headerEnd) {
         byte[] arr = buffer.array();
