@@ -47,6 +47,20 @@ public class HttpResponse {
         this.body = body == null ? new byte[0] : body;
     }
 
+    public byte[] getBody() {
+        return body;
+    }
+
+    public void appendBody(byte[] extra) {
+        if (extra == null || extra.length == 0) {
+            return;
+        }
+        byte[] merged = new byte[body.length + extra.length];
+        System.arraycopy(body, 0, merged, 0, body.length);
+        System.arraycopy(extra, 0, merged, body.length, extra.length);
+        body = merged;
+    }
+
     /** forward 前清空本次响应；已写下的 Set-Cookie 保留。 */
     public void reset() {
         status = 200;

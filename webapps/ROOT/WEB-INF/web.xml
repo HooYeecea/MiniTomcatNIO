@@ -27,6 +27,10 @@
         <servlet-name>forward</servlet-name>
         <servlet-class>cn.minitomcatnio.demo.ForwardServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>wrap</servlet-name>
+        <servlet-class>cn.minitomcatnio.demo.WrapServlet</servlet-class>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>hello</servlet-name>
@@ -51,6 +55,10 @@
     <servlet-mapping>
         <servlet-name>forward</servlet-name>
         <url-pattern>/forward</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>wrap</servlet-name>
+        <url-pattern>/wrap</url-pattern>
     </servlet-mapping>
     <filter>
         <filter-name>log</filter-name>

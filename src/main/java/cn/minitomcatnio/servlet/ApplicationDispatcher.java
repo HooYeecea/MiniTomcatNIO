@@ -5,7 +5,7 @@ import cn.minitomcatnio.http.HttpRequest;
 import cn.minitomcatnio.http.HttpResponse;
 
 /**
- * 把当前请求转到同应用的另一个路径（只做 forward，先不做 include）。
+ * 同应用内的 forward / include。
  */
 public class ApplicationDispatcher implements RequestDispatcher {
 
@@ -23,6 +23,16 @@ public class ApplicationDispatcher implements RequestDispatcher {
         response.reset();
         request.setDispatchedPath(target);
         context.dispatch(request, response);
+    }
+
+    @Override
+    public void include(HttpRequest request, HttpResponse response) {
+        String previous = request.getDispatchedPath();
+        request.setDispatchedPath(normalize(path));
+        HttpResponse included = new HttpResponse();
+        context.dispatch(request, included);
+        request.setDispatchedPath(previous);
+        response.appendBody(included.getBody());
     }
 
     private static String normalize(String path) {

@@ -15,7 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 一次 HTTP 请求：请求行、Header、body、参数和 Cookie。
+ * ä¸ćŹĄ HTTP čŻˇćąďźčŻˇćąčĄăHeaderăbodyăĺć°ĺ Cookieă
  */
 public class HttpRequest {
 
@@ -33,7 +33,7 @@ public class HttpRequest {
     private HttpResponse response;
     private HttpSession session;
     private Context context;
-    /** forward 后覆盖应用内路径；未 forward 时为 null。 */
+    /** forward ĺčŚçĺşç¨ĺčˇŻĺžďźćŞ forward ćśä¸ş nullă */
     private String dispatchedPath;
 
     private HttpRequest(String method, String uri, String version, Map<String, String> headers) {
@@ -53,7 +53,7 @@ public class HttpRequest {
         return uri;
     }
 
-    /** 去掉 query string 后的路径，供 Servlet 映射使用。 */
+    /** ĺťć query string ĺçčˇŻĺžďźäž Servlet ć ĺ°ä˝żç¨ă */
     public String getPath() {
         int query = uri.indexOf('?');
         String path = query >= 0 ? uri.substring(0, query) : uri;
@@ -64,7 +64,7 @@ public class HttpRequest {
         return contextPath;
     }
 
-    /** 去掉 Context 路径后的剩余路径，供该应用内部映射使用。 */
+    /** ĺťć Context čˇŻĺžĺçĺŠä˝čˇŻĺžďźäžčŻĽĺşç¨ĺé¨ć ĺ°ä˝żç¨ă */
     public String getPathWithinContext() {
         if (dispatchedPath != null) {
             return dispatchedPath;
@@ -91,6 +91,10 @@ public class HttpRequest {
         this.dispatchedPath = dispatchedPath;
     }
 
+    public String getDispatchedPath() {
+        return dispatchedPath;
+    }
+
     public void bindContext(Context context) {
         this.context = context;
     }
@@ -106,7 +110,7 @@ public class HttpRequest {
         return servletPath;
     }
 
-    /** 前缀映射多出来的路径，例如 /app/* 匹配 /app/user 时为 /user。 */
+    /** ĺçźć ĺ°ĺ¤ĺşćĽçčˇŻĺžďźäžĺŚ /app/* ĺšé /app/user ćśä¸ş /useră */
     public String getPathInfo() {
         return pathInfo;
     }
@@ -125,7 +129,7 @@ public class HttpRequest {
     }
 
     /**
-     * HTTP/1.1 默认保活，HTTP/1.0 默认关闭；请求头 Connection 可以覆盖。
+     * HTTP/1.1 éťčŽ¤äżć´ťďźHTTP/1.0 éťčŽ¤ĺłé­ďźčŻˇćąĺ¤´ Connection ĺŻäťĽčŚçă
      */
     public boolean shouldKeepAlive() {
         String connection = getHeader("connection");
@@ -139,7 +143,7 @@ public class HttpRequest {
         return Collections.unmodifiableMap(headers);
     }
 
-    /** 同名参数只保留第一次出现的值。 */
+    /** ĺĺĺć°ĺŞäżççŹŹä¸ćŹĄĺşç°çĺźă */
     public String getParameter(String name) {
         return parameters.get(name);
     }
@@ -158,7 +162,7 @@ public class HttpRequest {
     }
 
     /**
-     * 按 Cookie 里的 JSESSIONID 取 Session；没有就新建并 Set-Cookie。
+     * ć Cookie éç JSESSIONID ĺ Sessionďźć˛Ąćĺ°ąć°ĺťşĺšś Set-Cookieă
      */
     public HttpSession getSession() {
         if (session != null) {
@@ -186,7 +190,7 @@ public class HttpRequest {
     }
 
     /**
-     * 没有 Content-Length 时当作 0。非法值返回 -1。
+     * ć˛Ąć Content-Length ćśĺ˝ä˝ 0ăéćłĺźčżĺ -1ă
      */
     public int getContentLength() {
         String value = getHeader("content-length");
@@ -201,8 +205,8 @@ public class HttpRequest {
     }
 
     /**
-     * 在已读字节里找请求头结束位置（第一个 \\r 的下标）。
-     * buffer 此时仍是写模式：position = 已读长度。
+     * ĺ¨ĺˇ˛čŻťĺ­čéćžčŻˇćąĺ¤´çťćä˝ç˝ŽďźçŹŹä¸ä¸Ş \\r çä¸ć ďźă
+     * buffer ć­¤ćśäťćŻĺć¨Ąĺźďźposition = ĺˇ˛čŻťéżĺşŚă
      */
     public static int indexOfHeaderEnd(ByteBuffer buffer) {
         byte[] arr = buffer.array();
@@ -217,7 +221,7 @@ public class HttpRequest {
     }
 
     /**
-     * 解析请求行和 Header。格式不对时返回 null。
+     * č§ŁćčŻˇćąčĄĺ Headerăć źĺźä¸ĺŻšćśčżĺ nullă
      */
     public static HttpRequest parse(ByteBuffer buffer, int headerEnd) {
         byte[] arr = buffer.array();
