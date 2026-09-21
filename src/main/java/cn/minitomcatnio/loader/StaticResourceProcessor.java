@@ -3,20 +3,22 @@ package cn.minitomcatnio.loader;
 import cn.minitomcatnio.container.Context;
 import cn.minitomcatnio.http.HttpRequest;
 import cn.minitomcatnio.http.HttpResponse;
-import cn.minitomcatnio.servlet.Servlet;
 
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * 从当前 Context 的 docBase 读静态文件。Servlet 未命中时作为默认处理。
+ * 目录请求按 welcome-file-list 依次查找。
  */
 public class StaticResourceProcessor {
 
-    public static void process(HttpRequest request, HttpResponse response, Path docBase) {
+    public static void process(HttpRequest request, HttpResponse response, Context context) {
+        Path docBase = context.getDocBase();
         String path = uriToPath(request.getPathWithinContext());
         Path file = resolveSafe(docBase, path);
 
@@ -26,7 +28,11 @@ public class StaticResourceProcessor {
         }
 
         if (Files.isDirectory(file)) {
-            file = file.resolve("index.html");
+            file = findWelcomeFile(file, context.getWelcomeFiles());
+            if (file == null) {
+                notFound(response, path, 404, "Not Found");
+                return;
+            }
         }
 
         if (!Files.isRegularFile(file)) {
@@ -46,12 +52,29 @@ public class StaticResourceProcessor {
         }
     }
 
+    private static Path findWelcomeFile(Path directory, List<String> welcomeFiles) {
+        Path root = directory.toAbsolutePath().normalize();
+        for (String name : welcomeFiles) {
+            if (name == null || name.isBlank() || name.contains("/") || name.contains("\\") || name.contains("..")) {
+                continue;
+            }
+            Path candidate = root.resolve(name.trim()).normalize();
+            if (!candidate.startsWith(root)) {
+                continue;
+            }
+            if (Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
     private static String uriToPath(String uri) {
         int query = uri.indexOf('?');
         String path = query >= 0 ? uri.substring(0, query) : uri;
         path = URLDecoder.decode(path, StandardCharsets.UTF_8);
-        if (path.isEmpty() || "/".equals(path)) {
-            return "/index.html";
+        if (path.isEmpty()) {
+            return "/";
         }
         return path;
     }

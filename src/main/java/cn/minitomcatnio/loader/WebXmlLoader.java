@@ -16,7 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 读最小 web.xml：servlet / filter 及其 mapping。
+ * 读最小 web.xml：servlet / filter / error-page / welcome-file。
  */
 public class WebXmlLoader {
 
@@ -87,6 +87,16 @@ public class WebXmlLoader {
                 int status = Integer.parseInt(text(errorPage, "error-code"));
                 String location = text(errorPage, "location");
                 context.addErrorPage(status, location);
+            }
+
+            NodeList welcomeLists = document.getElementsByTagName("welcome-file-list");
+            if (welcomeLists.getLength() > 0) {
+                context.clearWelcomeFiles();
+                Element list = (Element) welcomeLists.item(0);
+                NodeList files = list.getElementsByTagName("welcome-file");
+                for (int i = 0; i < files.getLength(); i++) {
+                    context.addWelcomeFile(files.item(i).getTextContent());
+                }
             }
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load " + webXml, e);

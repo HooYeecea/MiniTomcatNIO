@@ -108,6 +108,10 @@
         <error-code>404</error-code>
         <location>/notfound</location>
     </error-page>
+    <welcome-file-list>
+        <welcome-file>welcome.html</welcome-file>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
     <filter>
         <filter-name>log</filter-name>
         <filter-class>cn.minitomcatnio.demo.LogFilter</filter-class>
