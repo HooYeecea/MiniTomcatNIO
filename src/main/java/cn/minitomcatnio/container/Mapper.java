@@ -4,15 +4,21 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 精确路径优先，其次最长前缀（/app/*）。匹配结果是 Wrapper。
+ * 匹配顺序：精确 → 最长前缀（/app/*）→ 扩展名（*.do）。匹配结果是 Wrapper。
  */
 public class Mapper {
 
     private final Map<String, Wrapper> exactMappings = new LinkedHashMap<>();
     /** key 是前缀本身，例如 /app，对应模式 /app/* */
     private final Map<String, Wrapper> prefixMappings = new LinkedHashMap<>();
+    /** key 是扩展名，例如 do，对应模式 *.do */
+    private final Map<String, Wrapper> extensionMappings = new LinkedHashMap<>();
 
     public void addWrapper(String pattern, Wrapper wrapper) {
+        if (pattern.startsWith("*.") && pattern.length() > 2 && pattern.indexOf('/') < 0) {
+            extensionMappings.put(pattern.substring(2), wrapper);
+            return;
+        }
         if (pattern.endsWith("/*")) {
             prefixMappings.put(pattern.substring(0, pattern.length() - 2), wrapper);
             return;
@@ -38,19 +44,27 @@ public class Mapper {
                 bestWrapper = entry.getValue();
             }
         }
-        if (bestWrapper == null) {
-            return null;
+        if (bestWrapper != null) {
+            String pathInfo = path.length() == bestPrefix.length()
+                    ? null
+                    : path.substring(bestPrefix.length());
+            return new Match(bestWrapper, bestPrefix + "/*", bestPrefix, pathInfo);
         }
 
-        String pathInfo = path.length() == bestPrefix.length()
-                ? null
-                : path.substring(bestPrefix.length());
-        return new Match(bestWrapper, bestPrefix + "/*", bestPrefix, pathInfo);
+        String extension = extensionOf(path);
+        if (extension != null) {
+            Wrapper extensionWrapper = extensionMappings.get(extension);
+            if (extensionWrapper != null) {
+                return new Match(extensionWrapper, "*." + extension, path, null);
+            }
+        }
+        return null;
     }
 
     public Map<String, Wrapper> mappings() {
         Map<String, Wrapper> all = new LinkedHashMap<>(exactMappings);
         prefixMappings.forEach((prefix, wrapper) -> all.put(prefix + "/*", wrapper));
+        extensionMappings.forEach((ext, wrapper) -> all.put("*." + ext, wrapper));
         return all;
     }
 
@@ -59,6 +73,16 @@ public class Mapper {
             return true;
         }
         return path.equals(prefix) || path.startsWith(prefix + "/");
+    }
+
+    /** 取路径最后一段里的扩展名；没有点或点在最后一段开头则返回 null。 */
+    private static String extensionOf(String path) {
+        int slash = path.lastIndexOf('/');
+        int dot = path.lastIndexOf('.');
+        if (dot <= slash || dot == path.length() - 1) {
+            return null;
+        }
+        return path.substring(dot + 1);
     }
 
     public static final class Match {

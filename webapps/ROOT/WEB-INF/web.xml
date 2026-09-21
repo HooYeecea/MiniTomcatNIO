@@ -47,6 +47,10 @@
         <servlet-name>notfound</servlet-name>
         <servlet-class>cn.minitomcatnio.demo.NotFoundServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>do</servlet-name>
+        <servlet-class>cn.minitomcatnio.demo.DoServlet</servlet-class>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>hello</servlet-name>
@@ -91,6 +95,10 @@
     <servlet-mapping>
         <servlet-name>notfound</servlet-name>
         <url-pattern>/notfound</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>do</servlet-name>
+        <url-pattern>*.do</url-pattern>
     </servlet-mapping>
     <error-page>
         <error-code>500</error-code>
