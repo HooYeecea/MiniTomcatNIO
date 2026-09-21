@@ -39,6 +39,14 @@
         <servlet-name>error</servlet-name>
         <servlet-class>cn.minitomcatnio.demo.ErrorServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>missing</servlet-name>
+        <servlet-class>cn.minitomcatnio.demo.MissingServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>notfound</servlet-name>
+        <servlet-class>cn.minitomcatnio.demo.NotFoundServlet</servlet-class>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>hello</servlet-name>
@@ -76,9 +84,21 @@
         <servlet-name>error</servlet-name>
         <url-pattern>/error</url-pattern>
     </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>missing</servlet-name>
+        <url-pattern>/missing</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>notfound</servlet-name>
+        <url-pattern>/notfound</url-pattern>
+    </servlet-mapping>
     <error-page>
         <error-code>500</error-code>
         <location>/error</location>
+    </error-page>
+    <error-page>
+        <error-code>404</error-code>
+        <location>/notfound</location>
     </error-page>
     <filter>
         <filter-name>log</filter-name>

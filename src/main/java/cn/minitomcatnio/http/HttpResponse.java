@@ -17,6 +17,7 @@ public class HttpResponse {
     private final Map<String, String> headers = new LinkedHashMap<>();
     private final List<String> setCookies = new ArrayList<>();
     private byte[] body = new byte[0];
+    private boolean error;
 
     public HttpResponse() {
         headers.put("Content-Type", "text/plain; charset=UTF-8");
@@ -29,6 +30,23 @@ public class HttpResponse {
 
     public int getStatus() {
         return status;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public boolean isError() {
+        return error;
+    }
+
+    /** 标记本次响应为错误。容器若配了对应 error-page，会改用那个页面的正文。 */
+    public void sendError(int status, String reason) {
+        this.status = status;
+        this.reason = reason == null || reason.isEmpty() ? "Error" : reason;
+        this.error = true;
+        headers.put("Content-Type", "text/plain; charset=UTF-8");
+        setBody(this.status + " " + this.reason);
     }
 
     public void setHeader(String name, String value) {
@@ -68,6 +86,7 @@ public class HttpResponse {
         headers.clear();
         headers.put("Content-Type", "text/plain; charset=UTF-8");
         body = new byte[0];
+        error = false;
     }
 
     /**
