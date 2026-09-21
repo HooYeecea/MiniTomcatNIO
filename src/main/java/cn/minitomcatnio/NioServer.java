@@ -15,12 +15,16 @@ public class NioServer {
     private static final int PORT = 8080;
 
     public static void main(String[] args) throws IOException {
-        Host host = new Host("localhost");
-        host.deployWebapps(Path.of("webapps"));
+        Host localhost = new Host("localhost");
+        localhost.deployWebapps(Path.of("webapps"));
+
+        Host appLocal = new Host("app.local");
+        appLocal.deployWebapps(Path.of("hosts", "app.local"));
 
         Engine engine = new Engine("Catalina");
         engine.setDefaultHost("localhost");
-        engine.addHost(host);
+        engine.addHost(localhost);
+        engine.addHost(appLocal);
 
         Connector connector = new Connector(PORT, engine);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
