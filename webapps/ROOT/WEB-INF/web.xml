@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app>
+    <listener>
+        <listener-class>cn.minitomcatnio.demo.StartupListener</listener-class>
+    </listener>
     <servlet>
         <servlet-name>hello</servlet-name>
         <servlet-class>cn.minitomcatnio.demo.HelloServlet</servlet-class>

@@ -3,6 +3,7 @@ package cn.minitomcatnio.loader;
 import cn.minitomcatnio.container.Context;
 import cn.minitomcatnio.servlet.Filter;
 import cn.minitomcatnio.servlet.Servlet;
+import cn.minitomcatnio.servlet.ServletContextListener;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -30,6 +31,13 @@ public class WebXmlLoader {
                     .newDocumentBuilder()
                     .parse(webXml.toFile());
             document.getDocumentElement().normalize();
+
+            NodeList listenerNodes = document.getElementsByTagName("listener");
+            for (int i = 0; i < listenerNodes.getLength(); i++) {
+                Element listener = (Element) listenerNodes.item(i);
+                String className = text(listener, "listener-class");
+                context.addListener(newInstance(context, className, ServletContextListener.class));
+            }
 
             Map<String, Servlet> servlets = new LinkedHashMap<>();
             NodeList servletNodes = document.getElementsByTagName("servlet");
