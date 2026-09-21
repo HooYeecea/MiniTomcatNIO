@@ -22,16 +22,23 @@ public class ApplicationDispatcher implements RequestDispatcher {
         String target = normalize(path);
         response.reset();
         request.setDispatchedPath(target);
+        // error-page 已经标成 ERROR，不要被 forward 盖成 FORWARD
+        if (request.getDispatcherType() != DispatcherType.ERROR) {
+            request.setDispatcherType(DispatcherType.FORWARD);
+        }
         context.dispatch(request, response);
     }
 
     @Override
     public void include(HttpRequest request, HttpResponse response) {
-        String previous = request.getDispatchedPath();
+        String previousPath = request.getDispatchedPath();
+        DispatcherType previousType = request.getDispatcherType();
         request.setDispatchedPath(normalize(path));
+        request.setDispatcherType(DispatcherType.INCLUDE);
         HttpResponse included = new HttpResponse();
         context.dispatch(request, included);
-        request.setDispatchedPath(previous);
+        request.setDispatchedPath(previousPath);
+        request.setDispatcherType(previousType);
         response.appendBody(included.getBody());
     }
 

@@ -2,6 +2,7 @@ package cn.minitomcatnio.http;
 
 import cn.minitomcatnio.servlet.ApplicationDispatcher;
 import cn.minitomcatnio.container.Context;
+import cn.minitomcatnio.servlet.DispatcherType;
 import cn.minitomcatnio.session.HttpSession;
 import cn.minitomcatnio.servlet.RequestDispatcher;
 import cn.minitomcatnio.servlet.Servlet;
@@ -15,7 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Ă¤Â¸ÂÄĹšÄ HTTP ÄĹťËÄÄÂÄĹşÂÄĹťËÄÄÂÄÄÂÄÂÂHeaderÄÂÂbodyÄÂÂÄşÂÂÄÂÂ°ÄşÂÂ CookieÄÂÂ
+ * ÄÂ¤ĂÂ¸ĂÂĂÂÄšĹĄĂÂ HTTP ĂÂÄšĹĽĂÂĂÂĂÂĂÂĂÂÄšĹĂÂĂÂÄšĹĽĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂÂHeaderĂÂĂÂĂÂbodyĂÂĂÂĂÂĂĹĂÂĂÂĂÂĂÂĂÂ°ĂĹĂÂĂÂ CookieĂÂĂÂĂÂ
  */
 public class HttpRequest {
 
@@ -33,10 +34,9 @@ public class HttpRequest {
     private HttpResponse response;
     private HttpSession session;
     private Context context;
-    /** forward ÄşÂÂÄĹÂĂ§ÂÂÄşĹÂĂ§ÂÂ¨ÄşÂÂÄËĹťÄşĹžÂÄĹşÂÄÂĹ forward ÄÂĹĂ¤Â¸Ĺ nullÄÂÂ */
+    /** forward ĂĹĂÂĂÂĂÂÄšÂĂÂÄÂ§ĂÂĂÂĂĹÄšÂĂÂÄÂ§ĂÂĂÂ¨ĂĹĂÂĂÂĂÂĂÂÄšĹĽĂĹÄšĹžĂÂĂÂÄšĹĂÂĂÂĂÂÄšÂ forward ĂÂĂÂÄšÂÄÂ¤ĂÂ¸ÄšÂ nullĂÂĂÂĂÂ */
     private String dispatchedPath;
-    /** 正在派发 error-page，避免错误页自己再抛异常时死循环。 */
-    private boolean errorDispatch;
+    private DispatcherType dispatcherType = DispatcherType.REQUEST;
 
     private HttpRequest(String method, String uri, String version, Map<String, String> headers) {
         this.method = method;
@@ -55,7 +55,7 @@ public class HttpRequest {
         return uri;
     }
 
-    /** ÄşÂĹĽÄÂÂ query string ÄşÂÂĂ§ÂÂÄËĹťÄşĹžÂÄĹşÂĂ¤ĹžÂ Servlet ÄÂÂ ÄşÂ°ÂĂ¤ËĹźĂ§ÂÂ¨ÄÂÂ */
+    /** ĂĹĂÂÄšÄ˝ĂÂĂÂĂÂ query string ĂĹĂÂĂÂÄÂ§ĂÂĂÂĂÂĂÂÄšĹĽĂĹÄšĹžĂÂĂÂÄšĹĂÂÄÂ¤ÄšĹžĂÂ Servlet ĂÂĂÂĂÂ ĂĹĂÂ°ĂÂÄÂ¤ĂÂÄšĹşÄÂ§ĂÂĂÂ¨ĂÂĂÂĂÂ */
     public String getPath() {
         int query = uri.indexOf('?');
         String path = query >= 0 ? uri.substring(0, query) : uri;
@@ -66,7 +66,7 @@ public class HttpRequest {
         return contextPath;
     }
 
-    /** ÄşÂĹĽÄÂÂ Context ÄËĹťÄşĹžÂÄşÂÂĂ§ÂÂÄşÂĹ Ă¤ËÂÄËĹťÄşĹžÂÄĹşÂĂ¤ĹžÂÄĹťÄ˝ÄşĹÂĂ§ÂÂ¨ÄşÂÂĂŠÂÂ¨ÄÂÂ ÄşÂ°ÂĂ¤ËĹźĂ§ÂÂ¨ÄÂÂ */
+    /** ĂĹĂÂÄšÄ˝ĂÂĂÂĂÂ Context ĂÂĂÂÄšĹĽĂĹÄšĹžĂÂĂĹĂÂĂÂÄÂ§ĂÂĂÂĂĹĂÂÄšÂ ÄÂ¤ĂÂĂÂĂÂĂÂÄšĹĽĂĹÄšĹžĂÂĂÂÄšĹĂÂÄÂ¤ÄšĹžĂÂĂÂÄšĹĽĂËĂĹÄšÂĂÂÄÂ§ĂÂĂÂ¨ĂĹĂÂĂÂÄĹ ĂÂĂÂ¨ĂÂĂÂĂÂ ĂĹĂÂ°ĂÂÄÂ¤ĂÂÄšĹşÄÂ§ĂÂĂÂ¨ĂÂĂÂĂÂ */
     public String getPathWithinContext() {
         if (dispatchedPath != null) {
             return dispatchedPath;
@@ -98,11 +98,15 @@ public class HttpRequest {
     }
 
     public boolean isErrorDispatch() {
-        return errorDispatch;
+        return dispatcherType == DispatcherType.ERROR;
     }
 
-    public void setErrorDispatch(boolean errorDispatch) {
-        this.errorDispatch = errorDispatch;
+    public DispatcherType getDispatcherType() {
+        return dispatcherType;
+    }
+
+    public void setDispatcherType(DispatcherType dispatcherType) {
+        this.dispatcherType = dispatcherType == null ? DispatcherType.REQUEST : dispatcherType;
     }
 
     public void bindContext(Context context) {
@@ -120,7 +124,7 @@ public class HttpRequest {
         return servletPath;
     }
 
-    /** ÄşÂÂĂ§ĹşÂÄÂÂ ÄşÂ°ÂÄşÂ¤ÂÄşÂĹÄÂÄ˝Ă§ÂÂÄËĹťÄşĹžÂÄĹşÂĂ¤ĹžÂÄşĹÂ /app/* ÄşÂĹĄĂŠÂÂ /app/user ÄÂĹĂ¤Â¸Ĺ /userÄÂÂ */
+    /** ĂĹĂÂĂÂÄÂ§ÄšĹĂÂĂÂĂÂĂÂ ĂĹĂÂ°ĂÂĂĹĂÂ¤ĂÂĂĹĂÂÄšÂĂÂĂÂĂËÄÂ§ĂÂĂÂĂÂĂÂÄšĹĽĂĹÄšĹžĂÂĂÂÄšĹĂÂÄÂ¤ÄšĹžĂÂĂĹÄšÂĂÂ /app/* ĂĹĂÂÄšÄÄĹ ĂÂĂÂ /app/user ĂÂĂÂÄšÂÄÂ¤ĂÂ¸ÄšÂ /userĂÂĂÂĂÂ */
     public String getPathInfo() {
         return pathInfo;
     }
@@ -139,7 +143,7 @@ public class HttpRequest {
     }
 
     /**
-     * HTTP/1.1 ĂŠĹĽÂÄĹ˝Â¤Ă¤ĹźÂÄÂ´ĹĽÄĹşÂHTTP/1.0 ĂŠĹĽÂÄĹ˝Â¤ÄşÂĹĂŠÂÂ­ÄĹşÂÄĹťËÄÄÂÄşÂ¤Â´ Connection ÄşÂĹťĂ¤ĹĽÄ˝ÄĹÂĂ§ÂÂÄÂÂ
+     * HTTP/1.1 ÄĹ ÄšÄ˝ĂÂĂÂÄšËĂÂ¤ÄÂ¤ÄšĹşĂÂĂÂĂÂ´ÄšÄ˝ĂÂÄšĹĂÂHTTP/1.0 ÄĹ ÄšÄ˝ĂÂĂÂÄšËĂÂ¤ĂĹĂÂÄšÂÄĹ ĂÂĂÂ­ĂÂÄšĹĂÂĂÂÄšĹĽĂÂĂÂĂÂĂÂĂĹĂÂ¤ĂÂ´ Connection ĂĹĂÂÄšĹĽÄÂ¤ÄšÄ˝ĂËĂÂÄšÂĂÂÄÂ§ĂÂĂÂĂÂĂÂĂÂ
      */
     public boolean shouldKeepAlive() {
         String connection = getHeader("connection");
@@ -153,7 +157,7 @@ public class HttpRequest {
         return Collections.unmodifiableMap(headers);
     }
 
-    /** ÄşÂÂÄşÂÂÄşÂÂÄÂÂ°ÄşÂĹĂ¤ĹźÂĂ§ÂÂĂ§ĹšĹšĂ¤Â¸ÂÄĹšÄÄşÂĹĂ§ÂÂ°Ă§ÂÂÄşÂĹşÄÂÂ */
+    /** ĂĹĂÂĂÂĂĹĂÂĂÂĂĹĂÂĂÂĂÂĂÂĂÂ°ĂĹĂÂÄšÂÄÂ¤ÄšĹşĂÂÄÂ§ĂÂĂÂÄÂ§ÄšĹĄÄšĹĄÄÂ¤ĂÂ¸ĂÂĂÂÄšĹĄĂÂĂĹĂÂÄšÂÄÂ§ĂÂĂÂ°ÄÂ§ĂÂĂÂĂĹĂÂÄšĹĂÂĂÂĂÂ */
     public String getParameter(String name) {
         return parameters.get(name);
     }
@@ -172,7 +176,7 @@ public class HttpRequest {
     }
 
     /**
-     * ÄÂÂ Cookie ĂŠÂÂĂ§ÂÂ JSESSIONID ÄşÂÂ SessionÄĹşÂÄËÄÄÂÂÄşÂ°ÄÄÂÂ°ÄşĹĽĹÄşĹĄĹ Set-CookieÄÂÂ
+     * ĂÂĂÂĂÂ Cookie ÄĹ ĂÂĂÂÄÂ§ĂÂĂÂ JSESSIONID ĂĹĂÂĂÂ SessionĂÂÄšĹĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂĹĂÂ°ĂÂĂÂĂÂĂÂ°ĂĹÄšÄ˝ÄšÂĂĹÄšÄÄšÂ Set-CookieĂÂĂÂĂÂ
      */
     public HttpSession getSession() {
         if (session != null) {
@@ -200,7 +204,7 @@ public class HttpRequest {
     }
 
     /**
-     * ÄËÄÄÂÂ Content-Length ÄÂĹÄşËÂĂ¤ËÂ 0ÄÂÂĂŠÂÂÄĹÂÄşÂĹşÄĹźÂÄşÂÂ -1ÄÂÂ
+     * ĂÂĂÂĂÂĂÂĂÂĂÂ Content-Length ĂÂĂÂÄšÂĂĹĂÂĂÂÄÂ¤ĂÂĂÂ 0ĂÂĂÂĂÂÄĹ ĂÂĂÂĂÂÄšÂĂÂĂĹĂÂÄšĹĂÂÄšĹşĂÂĂĹĂÂĂÂ -1ĂÂĂÂĂÂ
      */
     public int getContentLength() {
         String value = getHeader("content-length");
@@ -215,8 +219,8 @@ public class HttpRequest {
     }
 
     /**
-     * ÄşÂÂ¨ÄşËËÄĹťĹĽÄşÂ­ÂÄÂÂĂŠÂÂÄÂĹžÄĹťËÄÄÂÄşÂ¤Â´Ă§ĹĽÂÄÂÂĂ¤ËÂĂ§ËĹ˝ÄĹşÂĂ§ĹšĹšĂ¤Â¸ÂĂ¤Â¸Ĺ \\r Ă§ÂÂĂ¤Â¸ÂÄÂ ÂÄĹşÂÄÂÂ
-     * buffer ÄÂ­Â¤ÄÂĹĂ¤ĹĽÂÄÂĹťÄşÂÂÄÂ¨ÄÄşĹşÂÄĹşÂposition = ÄşËËÄĹťĹĽĂŠÂĹźÄşĹĹÄÂÂ
+     * ĂĹĂÂĂÂ¨ĂĹĂÂĂÂĂÂÄšĹĽÄšÄ˝ĂĹĂÂ­ĂÂĂÂĂÂĂÂÄĹ ĂÂĂÂĂÂĂÂÄšĹžĂÂÄšĹĽĂÂĂÂĂÂĂÂĂĹĂÂ¤ĂÂ´ÄÂ§ÄšÄ˝ĂÂĂÂĂÂĂÂÄÂ¤ĂÂĂÂÄÂ§ĂÂÄšËĂÂÄšĹĂÂÄÂ§ÄšĹĄÄšĹĄÄÂ¤ĂÂ¸ĂÂÄÂ¤ĂÂ¸ÄšÂ \\r ÄÂ§ĂÂĂÂÄÂ¤ĂÂ¸ĂÂĂÂĂÂ ĂÂĂÂÄšĹĂÂĂÂĂÂĂÂ
+     * buffer ĂÂĂÂ­ĂÂ¤ĂÂĂÂÄšÂÄÂ¤ÄšÄ˝ĂÂĂÂĂÂÄšĹĽĂĹĂÂĂÂĂÂĂÂ¨ĂÂĂĹÄšĹĂÂĂÂÄšĹĂÂposition = ĂĹĂÂĂÂĂÂÄšĹĽÄšÄ˝ÄĹ ĂÂÄšĹşĂĹÄšÂÄšÂĂÂĂÂĂÂ
      */
     public static int indexOfHeaderEnd(ByteBuffer buffer) {
         byte[] arr = buffer.array();
@@ -231,7 +235,7 @@ public class HttpRequest {
     }
 
     /**
-     * ÄÂ§ĹÄÂÂÄĹťËÄÄÂÄÄÂÄşÂÂ HeaderÄÂÂÄÂ ĹşÄşĹşÂĂ¤Â¸ÂÄşĹťĹĄÄÂĹÄĹźÂÄşÂÂ nullÄÂÂ
+     * ĂÂĂÂ§ÄšÂĂÂĂÂĂÂĂÂÄšĹĽĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂĹĂÂĂÂ HeaderĂÂĂÂĂÂĂÂĂÂ ÄšĹĂĹÄšĹĂÂÄÂ¤ĂÂ¸ĂÂĂĹÄšĹĽÄšÄĂÂĂÂÄšÂĂÂÄšĹşĂÂĂĹĂÂĂÂ nullĂÂĂÂĂÂ
      */
     public static HttpRequest parse(ByteBuffer buffer, int headerEnd) {
         byte[] arr = buffer.array();

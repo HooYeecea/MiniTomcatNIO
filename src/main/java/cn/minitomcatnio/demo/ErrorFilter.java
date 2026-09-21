@@ -1,28 +1,28 @@
 package cn.minitomcatnio.demo;
 
-import cn.minitomcatnio.servlet.Filter;
-import cn.minitomcatnio.servlet.FilterChain;
 import cn.minitomcatnio.http.HttpRequest;
 import cn.minitomcatnio.http.HttpResponse;
+import cn.minitomcatnio.servlet.Filter;
+import cn.minitomcatnio.servlet.FilterChain;
 
 /**
- * ROOT 应用的示例 Filter，用来验收过滤器链。
+ * 只在 ERROR 派发时执行，用来验收 filter-mapping 的 dispatcher。
  */
-public class LogFilter implements Filter {
+public class ErrorFilter implements Filter {
 
     @Override
     public void init() {
-        System.out.println("Filter init: LogFilter");
+        System.out.println("Filter init: ErrorFilter");
     }
 
     @Override
     public void destroy() {
-        System.out.println("Filter destroy: LogFilter");
+        System.out.println("Filter destroy: ErrorFilter");
     }
 
     @Override
     public void doFilter(HttpRequest request, HttpResponse response, FilterChain chain) {
-        System.out.println("Filter: " + request.getPath()
+        System.out.println("ErrorFilter: " + request.getPath()
                 + " dispatcher=" + request.getDispatcherType());
         chain.doFilter(request, response);
     }

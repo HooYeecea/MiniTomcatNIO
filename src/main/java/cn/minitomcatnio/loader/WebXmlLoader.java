@@ -1,6 +1,7 @@
 package cn.minitomcatnio.loader;
 
 import cn.minitomcatnio.container.Context;
+import cn.minitomcatnio.servlet.DispatcherType;
 import cn.minitomcatnio.servlet.Filter;
 import cn.minitomcatnio.servlet.Servlet;
 import cn.minitomcatnio.servlet.ServletContextListener;
@@ -12,8 +13,10 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 读最小 web.xml：servlet / filter / error-page / welcome-file。
@@ -78,7 +81,7 @@ public class WebXmlLoader {
                 if (filter == null) {
                     throw new IllegalStateException("Unknown filter-name in mapping: " + name);
                 }
-                context.addFilter(pattern, filter);
+                context.addFilter(pattern, filter, parseDispatchers(mapping));
             }
 
             NodeList errorPageNodes = document.getElementsByTagName("error-page");
@@ -101,6 +104,19 @@ public class WebXmlLoader {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load " + webXml, e);
         }
+    }
+
+    private static Set<DispatcherType> parseDispatchers(Element mapping) {
+        EnumSet<DispatcherType> dispatchers = EnumSet.noneOf(DispatcherType.class);
+        NodeList nodes = mapping.getElementsByTagName("dispatcher");
+        for (int i = 0; i < nodes.getLength(); i++) {
+            String value = nodes.item(i).getTextContent().trim();
+            dispatchers.add(DispatcherType.valueOf(value));
+        }
+        if (dispatchers.isEmpty()) {
+            dispatchers.add(DispatcherType.REQUEST);
+        }
+        return dispatchers;
     }
 
     private static <T> T newInstance(Context context, String className, Class<T> type) throws Exception {
