@@ -3,6 +3,10 @@
     <listener>
         <listener-class>cn.minitomcatnio.demo.StartupListener</listener-class>
     </listener>
+    <context-param>
+        <param-name>appName</param-name>
+        <param-value>MiniTomcatNIO</param-value>
+    </context-param>
     <servlet>
         <servlet-name>hello</servlet-name>
         <servlet-class>cn.minitomcatnio.demo.HelloServlet</servlet-class>
@@ -59,6 +63,10 @@
             <param-value>hello from web.xml</param-value>
         </init-param>
     </servlet>
+    <servlet>
+        <servlet-name>config</servlet-name>
+        <servlet-class>cn.minitomcatnio.demo.ConfigServlet</servlet-class>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>hello</servlet-name>
@@ -111,6 +119,10 @@
     <servlet-mapping>
         <servlet-name>greeting</servlet-name>
         <url-pattern>/greeting</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>config</servlet-name>
+        <url-pattern>/config</url-pattern>
     </servlet-mapping>
     <error-page>
         <error-code>500</error-code>

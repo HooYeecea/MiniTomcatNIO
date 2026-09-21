@@ -113,6 +113,10 @@ public class HttpRequest {
         this.context = context;
     }
 
+    public Context getContext() {
+        return context;
+    }
+
     public RequestDispatcher getRequestDispatcher(String path) {
         if (context == null) {
             throw new IllegalStateException("Request is not bound to a Context");

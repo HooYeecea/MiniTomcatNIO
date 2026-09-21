@@ -86,6 +86,12 @@ public class WebXmlLoader {
                 context.addFilter(pattern, filter, parseDispatchers(mapping));
             }
 
+            NodeList contextParamNodes = document.getElementsByTagName("context-param");
+            for (int i = 0; i < contextParamNodes.getLength(); i++) {
+                Element param = (Element) contextParamNodes.item(i);
+                context.setInitParameter(text(param, "param-name"), text(param, "param-value"));
+            }
+
             NodeList errorPageNodes = document.getElementsByTagName("error-page");
             for (int i = 0; i < errorPageNodes.getLength(); i++) {
                 Element errorPage = (Element) errorPageNodes.item(i);

@@ -38,6 +38,7 @@ public class Context {
     private final List<ServletContextListener> listeners = new ArrayList<>();
     private final IdentityHashMap<Servlet, Map<String, String>> servletInitParams = new IdentityHashMap<>();
     private final Map<Integer, String> errorPages = new HashMap<>();
+    private final Map<String, String> contextParams = new HashMap<>();
     private final List<String> welcomeFiles = new ArrayList<>(List.of("index.html"));
     private boolean stopped;
 
@@ -90,6 +91,14 @@ public class Context {
 
     public void addErrorPage(int status, String location) {
         errorPages.put(status, location);
+    }
+
+    public void setInitParameter(String name, String value) {
+        contextParams.put(name, value);
+    }
+
+    public String getInitParameter(String name) {
+        return contextParams.get(name);
     }
 
     public void addWelcomeFile(String fileName) {
