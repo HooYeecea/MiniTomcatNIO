@@ -23,20 +23,20 @@ public class StaticResourceProcessor {
         Path file = resolveSafe(docBase, path);
 
         if (file == null) {
-            notFound(response, path, 403, "Forbidden");
+            response.sendError(403, "Forbidden");
             return;
         }
 
         if (Files.isDirectory(file)) {
             file = findWelcomeFile(file, context.getWelcomeFiles());
             if (file == null) {
-                notFound(response, path, 404, "Not Found");
+                response.sendError(404, "Not Found");
                 return;
             }
         }
 
         if (!Files.isRegularFile(file)) {
-            notFound(response, path, 404, "Not Found");
+            response.sendError(404, "Not Found");
             return;
         }
 
@@ -46,9 +46,7 @@ public class StaticResourceProcessor {
             response.setHeader("Content-Type", contentType(file.getFileName().toString()));
             response.setBody(content);
         } catch (IOException e) {
-            response.setStatus(500, "Internal Server Error");
-            response.setHeader("Content-Type", "text/plain; charset=UTF-8");
-            response.setBody("500 Internal Server Error");
+            response.sendError(500, "Internal Server Error");
         }
     }
 
@@ -87,12 +85,6 @@ public class StaticResourceProcessor {
             return null;
         }
         return file;
-    }
-
-    private static void notFound(HttpResponse response, String path, int status, String reason) {
-        response.setStatus(status, reason);
-        response.setHeader("Content-Type", "text/plain; charset=UTF-8");
-        response.setBody(status + " " + reason + ": " + path);
     }
 
     private static String contentType(String fileName) {
