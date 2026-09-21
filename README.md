@@ -4,7 +4,8 @@ A mini Tomcat built with Java NIO. The goal is to make the main request path cle
 
 - Language / build: Java 21 + Maven
 - Default port: `8080`
-- App directory: `webapps/` (scanned and deployed at startup)
+- Default host apps: `webapps/` (scanned and deployed at startup)
+- Second virtual host: `hosts/app.local/` (`Host: app.local`)
 
 Chinese version: [README(cn).md](README(cn).md)
 
@@ -12,7 +13,7 @@ Chinese version: [README(cn).md](README(cn).md)
 
 | Baseline | Rough progress | Notes |
 |----------|----------------|-------|
-| **Learning skeleton** (explain Tomcat’s core path) | **~60%–70%** | Connector, container tree, web.xml, Filter, ClassLoader, auto-deploy are in place |
+| **Learning skeleton** (explain Tomcat’s core path) | **~80%** | Connector, container tree, virtual hosts, web.xml, Filter dispatcher, error pages, ClassLoader, lifecycle, and the default Servlet are in place |
 | **Real Tomcat** (production-ready server) | **~5%–10%** | No HTTPS / HTTP/2, no JSP, no hot deploy, no full Servlet API |
 
 In short: **the container main path already looks like a mini Tomcat; it is nowhere near a production Tomcat.**
@@ -23,14 +24,15 @@ In short: **the container main path already looks like a mini Tomcat; it is nowh
 Browser / curl
   → Connector (NIO accept / read / write, HTTP/1.1 parse)
   → Worker pool (business work; does not block the Selector)
-  → Engine (pick Host from the Host header)
-  → Host (pick Context by URI prefix)
+  → Engine (pick Host from the Host header; unknown hosts fall back to localhost)
+  → Host (pick Context by the longest URI prefix)
   → Context Pipeline (Valves, e.g. AccessLog)
-  → Mapper (exact path / prefix /*)
-  → Filter chain
+  → Mapper (exact → longest prefix /* → extension *.do → default /)
+  → Filter chain (dispatcher: REQUEST by default; FORWARD / INCLUDE / ERROR only when declared)
   → Wrapper → Servlet
-  (if no match: static file from that app’s docBase)
 ```
+
+Static files, welcome files, and a missing-file 404 are not a special case outside the Mapper. They are served by the container `DefaultServlet` mapped to `/`.
 
 ## What works today
 
@@ -40,28 +42,34 @@ Browser / curl
 - HTTP/1.1 header assembly and `Content-Length` body reads
 - Keep-Alive (keep reading after write; close on `Connection: close`)
 - Fixed-size worker pool; business logic separated from I/O
+- `connector.stop()` plus a shutdown hook: servlets and filters `destroy`, then listeners `contextDestroyed`
 
 ### Container structure
 
 - `Engine` → `Host` → `Context` → `Wrapper`
 - Context `Pipeline` / `Valve` (including AccessLog)
-- Auto-deploy by scanning `webapps/`: `ROOT` → `/`, other dirs → `/dirname`
+- Auto-deploy by scanning a host directory: `ROOT` → `/`, other dirs → `/dirname`
+- Two hosts: `localhost` (`webapps/`) and `app.local` (`hosts/app.local/`)
+- `DefaultServlet` on `/`, after exact, prefix, and extension mappings
 
 ### Web application side
 
 - Per-app `docBase` (e.g. `webapps/ROOT`, `webapps/other`)
-- Minimal `WEB-INF/web.xml`: `servlet` / `filter` and mappings
-- Exact and prefix mappings (`/app/*`), with `pathInfo`
+- Minimal `WEB-INF/web.xml`: servlet, filter, listener, error-page, welcome-file, `init-param`, `context-param`
+- Exact, longest-prefix (`/app/*`), and extension (`*.do`) mappings, with `pathInfo`
+- `welcome-file-list` for directory requests (default `index.html` when unset)
 - Static resources, query / form params, Cookie, in-memory Session (`JSESSIONID`)
-- Filter chain, `RequestDispatcher.forward`
-- Servlet / Filter `init`
+- Filter chain and `<dispatcher>` (`REQUEST`, `FORWARD`, `INCLUDE`, `ERROR`)
+- `RequestDispatcher.forward` and `include`
+- `error-page` for thrown exceptions (500) and `sendError` (including static 404)
+- Servlet / Filter `init` and `destroy`; `ServletContextListener`
+- Per-servlet `init-param` and per-app `context-param`
 - Per-app `WebappClassLoader` (prefers `WEB-INF/classes` and `WEB-INF/lib`)
 
 ## Not implemented (intentionally deferred)
 
-- Listener, `RequestDispatcher.include`, `destroy` / graceful shutdown
 - Session expiry cleanup, hot deploy, WAR unpack
-- Extension mapping (`*.do`), annotation scan, full `web.xml` semantics
+- Annotation scan, full `web.xml` semantics (security constraints, mime-mapping, and so on)
 - HTTPS, chunked transfer, HTTP/2, JSP, clustering, full Servlet API
 
 ## Package layout
@@ -72,7 +80,7 @@ cn.minitomcatnio
 ├── connector                 # NIO Connector
 ├── http                      # HttpRequest / HttpResponse
 ├── container                 # Engine / Host / Context / Wrapper / Valve / Mapper
-├── servlet                   # Servlet / Filter / RequestDispatcher
+├── servlet                   # Servlet / Filter / Dispatcher / DefaultServlet
 ├── session                   # Session
 ├── loader                    # web.xml, static resources, WebappClassLoader
 └── demo                      # sample Servlet / Filter (referenced by webapps)
@@ -81,19 +89,24 @@ cn.minitomcatnio
 ## Directory layout & sample apps
 
 ```text
-webapps/
-├── ROOT/                     # default app, context path = /
+webapps/                      # Host localhost
+├── ROOT/                     # context path = /
+│   ├── welcome.html          # first welcome file
 │   ├── index.html
 │   ├── hello.txt
 │   └── WEB-INF/web.xml
-└── other/                    # second app, context path = /other
+└── other/                    # context path = /other
     ├── index.html
     └── WEB-INF/web.xml
+hosts/app.local/              # Host app.local
+└── ROOT/
+    ├── index.html
+    └── hello.txt
 ```
 
 ## Build & run
 
-From the project root (so `webapps/` is visible):
+From the project root (so `webapps/` and `hosts/` are visible):
 
 ```bash
 mvn -q compile
@@ -115,27 +128,36 @@ Without copying, app classes can still load via the parent ClassLoader (`target/
 
 | URL | Expected |
 |-----|----------|
-| http://127.0.0.1:8080/ | ROOT static home |
+| http://127.0.0.1:8080/ | ROOT `welcome.html` |
 | http://127.0.0.1:8080/hello | HelloServlet |
+| http://127.0.0.1:8080/hello.do | Extension mapping, `pathInfo` empty |
 | http://127.0.0.1:8080/app/x | Prefix mapping, `pathInfo=/x` |
 | http://127.0.0.1:8080/echo?name=tom | Parameter parsing |
 | http://127.0.0.1:8080/cookie | Cookie read/write |
 | http://127.0.0.1:8080/session | Session counter |
-| http://127.0.0.1:8080/forward | Forward to `/hello` |
-| http://127.0.0.1:8080/other/ | Second app home |
+| http://127.0.0.1:8080/forward | Forward to `/hello`; original path stays `/forward` |
+| http://127.0.0.1:8080/wrap | Include: outer line plus `/hello` body |
+| http://127.0.0.1:8080/greeting | `init-param` `greeting` |
+| http://127.0.0.1:8080/config | `context-param` `appName` |
+| http://127.0.0.1:8080/boom | 500 error page |
+| http://127.0.0.1:8080/no-such.txt | 404 error page via `sendError` |
 | http://127.0.0.1:8080/other/ping | Second app Servlet |
+| `Host: app.local` on `/` | Second virtual host home |
 
 ```bash
 curl http://127.0.0.1:8080/hello
-curl -d "name=tom" http://127.0.0.1:8080/echo
+curl http://127.0.0.1:8080/greeting
+curl -H "Host: app.local" http://127.0.0.1:8080/
 curl http://127.0.0.1:8080/other/ping
 ```
 
 ## Design notes
 
 - **Valve ≠ Filter**: Valves are container pipeline hooks (outer); Filters are app filters (in front of a Servlet).
+- **Filter dispatcher**: a mapping with no `<dispatcher>` matches `REQUEST` only. Forward, include, and error dispatch do not re-enter that filter.
 - **Connector does not own apps**: it only handles connections and the protocol; Engine / Host / Context do dispatch.
-- **One capability at a time**: protocol → object split → static files → Servlet → thread pool → Keep-Alive → body → params → mapping → Cookie → Session → container split → Valve → Wrapper → Engine/Host → multi-app → docBase → web.xml → Filter → forward → packages → ClassLoader → auto-deploy.
+- **`/` is the default Servlet**, not an exact match for the context root. Exact, prefix, and extension rules win first.
+- **One capability at a time**: protocol → object split → static files → Servlet → thread pool → Keep-Alive → body → params → mapping → Cookie → Session → container split → Valve → Wrapper → Engine/Host → multi-app → docBase → web.xml → Filter → forward → packages → ClassLoader → auto-deploy → listener → destroy → include → error-page → sendError → extension mapping → welcome-file → filter dispatcher → default Servlet → virtual host → init-param → context-param.
 
 ## License
 
