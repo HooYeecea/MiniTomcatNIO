@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 匹配顺序：精确 → 最长前缀（/app/*）→ 扩展名（*.do）。匹配结果是 Wrapper。
+ * 匹配顺序：精确 → 最长前缀（/app/*）→ 扩展名（*.do）→ 默认 Servlet（/）。
  */
 public class Mapper {
 
@@ -13,8 +13,14 @@ public class Mapper {
     private final Map<String, Wrapper> prefixMappings = new LinkedHashMap<>();
     /** key 是扩展名，例如 do，对应模式 *.do */
     private final Map<String, Wrapper> extensionMappings = new LinkedHashMap<>();
+    /** url-pattern 为 / 的默认 Servlet，优先级最低。 */
+    private Wrapper defaultWrapper;
 
     public void addWrapper(String pattern, Wrapper wrapper) {
+        if ("/".equals(pattern)) {
+            defaultWrapper = wrapper;
+            return;
+        }
         if (pattern.startsWith("*.") && pattern.length() > 2 && pattern.indexOf('/') < 0) {
             extensionMappings.put(pattern.substring(2), wrapper);
             return;
@@ -24,6 +30,10 @@ public class Mapper {
             return;
         }
         exactMappings.put(pattern, wrapper);
+    }
+
+    public boolean hasDefault() {
+        return defaultWrapper != null;
     }
 
     public Match match(String path) {
@@ -58,6 +68,9 @@ public class Mapper {
                 return new Match(extensionWrapper, "*." + extension, path, null);
             }
         }
+        if (defaultWrapper != null) {
+            return new Match(defaultWrapper, "/", path, null);
+        }
         return null;
     }
 
@@ -65,6 +78,9 @@ public class Mapper {
         Map<String, Wrapper> all = new LinkedHashMap<>(exactMappings);
         prefixMappings.forEach((prefix, wrapper) -> all.put(prefix + "/*", wrapper));
         extensionMappings.forEach((ext, wrapper) -> all.put("*." + ext, wrapper));
+        if (defaultWrapper != null) {
+            all.put("/", defaultWrapper);
+        }
         return all;
     }
 
