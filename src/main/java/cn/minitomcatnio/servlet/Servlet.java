@@ -11,5 +11,8 @@ public interface Servlet {
     default void init() {
     }
 
+    default void destroy() {
+    }
+
     void service(HttpRequest request, HttpResponse response);
 }

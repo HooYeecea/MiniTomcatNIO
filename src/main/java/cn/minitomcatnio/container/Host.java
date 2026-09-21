@@ -61,6 +61,12 @@ public class Host {
         return contexts;
     }
 
+    public void stop() {
+        for (Context context : contexts.values()) {
+            context.stop();
+        }
+    }
+
     public void invoke(HttpRequest request, HttpResponse response) {
         pipeline.invoke(request, response);
     }

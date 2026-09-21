@@ -16,6 +16,11 @@ public class LogFilter implements Filter {
     }
 
     @Override
+    public void destroy() {
+        System.out.println("Filter destroy: LogFilter");
+    }
+
+    @Override
     public void doFilter(HttpRequest request, HttpResponse response, FilterChain chain) {
         System.out.println("Filter: " + request.getPath());
         chain.doFilter(request, response);

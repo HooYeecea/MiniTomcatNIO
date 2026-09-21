@@ -14,4 +14,11 @@ public class StartupListener implements ServletContextListener {
         System.out.println("Listener: contextInitialized path="
                 + (path == null || path.isEmpty() ? "/" : path));
     }
+
+    @Override
+    public void contextDestroyed(Context context) {
+        String path = context.getPath();
+        System.out.println("Listener: contextDestroyed path="
+                + (path == null || path.isEmpty() ? "/" : path));
+    }
 }

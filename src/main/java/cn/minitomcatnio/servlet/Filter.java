@@ -11,5 +11,8 @@ public interface Filter {
     default void init() {
     }
 
+    default void destroy() {
+    }
+
     void doFilter(HttpRequest request, HttpResponse response, FilterChain chain);
 }

@@ -17,7 +17,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 
 /**
- * ÄÂÂÄşÂ°Â ContainerÄĹşÂĂ¤Â¸ÂĂ¤Â¸Ĺ web ÄşĹÂĂ§ÂÂ¨ÄÂÂÄĹťËÄÄÂÄşÂÂÄÄžÂ° PipelineÄĹşÂÄÂÂÄşÂÂĂ¤Â¸ÂÄşÂĹÄÂÂÄşÂÂÄşÂÂ ServletÄÂÂ
+ * ĂÂĂÂĂÂĂĹĂÂ°ĂÂ ContainerĂÂÄšĹĂÂÄÂ¤ĂÂ¸ĂÂÄÂ¤ĂÂ¸ÄšÂ web ĂĹÄšÂĂÂÄÂ§ĂÂĂÂ¨ĂÂĂÂĂÂĂÂÄšĹĽĂÂĂÂĂÂĂÂĂĹĂÂĂÂĂÂĂĹžĂÂ° PipelineĂÂÄšĹĂÂĂÂĂÂĂÂĂĹĂÂĂÂÄÂ¤ĂÂ¸ĂÂĂĹĂÂÄšÂĂÂĂÂĂÂĂĹĂÂĂÂĂĹĂÂĂÂ ServletĂÂĂÂĂÂ
  */
 public class Context {
 
@@ -29,6 +29,7 @@ public class Context {
     private String path = "";
     private final List<FilterMapping> filterMappings = new ArrayList<>();
     private final List<ServletContextListener> listeners = new ArrayList<>();
+    private boolean stopped;
 
     public Context(Path docBase) {
         this.docBase = docBase.toAbsolutePath().normalize();
@@ -76,7 +77,7 @@ public class Context {
     }
 
     /**
-     * web.xml ÄĹÂÄşĹ˝ÂÄşÂÂÄşÂÂÄşÂ§ÂÄşÂÂÄĹťÂĂ¤Â¸Ĺ Servlet / FilterÄĹşÂÄşÂÂĂ¤Â¸ÂÄşĹ˝ÂĂ¤ĹžÂÄşÂĹ init Ă¤Â¸ÂÄĹšÄÄÂÂ
+     * web.xml ĂÂÄšÂĂÂĂĹÄšËĂÂĂĹĂÂĂÂĂĹĂÂĂÂĂĹĂÂ§ĂÂĂĹĂÂĂÂĂÂÄšĹĽĂÂÄÂ¤ĂÂ¸ÄšÂ Servlet / FilterĂÂÄšĹĂÂĂĹĂÂĂÂÄÂ¤ĂÂ¸ĂÂĂĹÄšËĂÂÄÂ¤ÄšĹžĂÂĂĹĂÂÄšÂ init ÄÂ¤ĂÂ¸ĂÂĂÂÄšĹĄĂÂĂÂĂÂĂÂ
      */
     private void start() {
         for (ServletContextListener listener : listeners) {
@@ -98,7 +99,34 @@ public class Context {
     }
 
     /**
-     * ÄşÂĹÄÂĹšĂŠÂÂÄÂ°ÂĂ§ÂÂ¨ÄĹşÂÄşÂËĂ¤Â¸Â­ Wrapper ÄşÂÂÄÂÂ§ÄÄÂÄĹşÂÄşÂĹÄşÂÂÄÄžÂ°ĂŠÂÂÄÂÂÄÄžÂÄĹÂÄÂÂ
+     * 先 destroy Servlet / Filter，再通知 listener。规范要求 listener 看到的是已销毁的组件。
+     */
+    public void stop() {
+        if (stopped) {
+            return;
+        }
+        stopped = true;
+
+        IdentityHashMap<Servlet, Boolean> stoppedServlets = new IdentityHashMap<>();
+        for (Wrapper wrapper : mapper.mappings().values()) {
+            Servlet servlet = wrapper.getServlet();
+            if (stoppedServlets.put(servlet, Boolean.TRUE) == null) {
+                servlet.destroy();
+            }
+        }
+        IdentityHashMap<Filter, Boolean> stoppedFilters = new IdentityHashMap<>();
+        for (FilterMapping mapping : filterMappings) {
+            if (stoppedFilters.put(mapping.filter, Boolean.TRUE) == null) {
+                mapping.filter.destroy();
+            }
+        }
+        for (int i = listeners.size() - 1; i >= 0; i--) {
+            listeners.get(i).contextDestroyed(this);
+        }
+    }
+
+    /**
+     * ĂĹĂÂÄšÂĂÂĂÂÄšĹĄÄĹ ĂÂĂÂĂÂĂÂ°ĂÂÄÂ§ĂÂĂÂ¨ĂÂÄšĹĂÂĂĹĂÂĂÂÄÂ¤ĂÂ¸ĂÂ­ Wrapper ĂĹĂÂĂÂĂÂĂÂĂÂ§ĂÂĂÂĂÂĂÂÄšĹĂÂĂĹĂÂÄšÂĂĹĂÂĂÂĂÂĂĹžĂÂ°ÄĹ ĂÂĂÂĂÂĂÂĂÂĂÂĂĹžĂÂĂÂÄšÂĂÂĂÂĂÂĂÂ
      */
     void service(HttpRequest request, HttpResponse response) {
         request.setContextPath(path);
@@ -108,7 +136,7 @@ public class Context {
     }
 
     /**
-     * ÄşÂÂ¨ÄşËÂÄşÂÂ Context ÄşÂÂÄşÂÂÄşÂÂÄÂÂforward Ă¤ĹĄÂĂ¤ĹşÂÄşÂÂÄÄžÂ°ÄĹźÂĂŠÂÂÄÂÂ
+     * ĂĹĂÂĂÂ¨ĂĹĂÂĂÂĂĹĂÂĂÂ Context ĂĹĂÂĂÂĂĹĂÂĂÂĂĹĂÂĂÂĂÂĂÂĂÂforward ÄÂ¤ÄšÄĂÂÄÂ¤ÄšĹĂÂĂĹĂÂĂÂĂÂĂĹžĂÂ°ĂÂÄšĹşĂÂÄĹ ĂÂĂÂĂÂĂÂĂÂ
      */
     public void dispatch(HttpRequest request, HttpResponse response) {
         Mapper.Match match = mapper.match(request.getPathWithinContext());

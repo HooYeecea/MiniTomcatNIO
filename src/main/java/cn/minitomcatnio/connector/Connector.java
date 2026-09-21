@@ -30,6 +30,9 @@ public class Connector {
 
     private final int port;
     private final Engine engine;
+    private volatile boolean running;
+    private volatile Selector selector;
+    private volatile ServerSocketChannel serverChannel;
     private final AtomicInteger workerSeq = new AtomicInteger();
     private final ExecutorService workers = Executors.newFixedThreadPool(WORKER_THREADS, r -> {
         Thread t = new Thread(r);
@@ -44,12 +47,13 @@ public class Connector {
     }
 
     public void start() throws IOException {
-        ServerSocketChannel serverChannel = ServerSocketChannel.open();
+        serverChannel = ServerSocketChannel.open();
         serverChannel.configureBlocking(false);
         serverChannel.bind(new InetSocketAddress(port));
 
-        Selector selector = Selector.open();
+        selector = Selector.open();
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+        running = true;
 
         System.out.println("Connector started on port " + port);
         System.out.println("engine: " + engine.getName() + " defaultHost=" + engine.getDefaultHost());
@@ -67,8 +71,11 @@ public class Connector {
                                     + wrapper.getServlet().getClass().getSimpleName()));
                 }));
 
-        while (true) {
+        while (running) {
             selector.select();
+            if (!running) {
+                break;
+            }
 
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> it = selectedKeys.iterator();
@@ -94,6 +101,29 @@ public class Connector {
                     closeConnection(key);
                 }
             }
+        }
+        closeQuietly(selector);
+        closeQuietly(serverChannel);
+        workers.shutdownNow();
+        System.out.println("Connector stopped");
+    }
+
+    /** 让事件循环退出。可从其它线程调用。 */
+    public void stop() {
+        running = false;
+        Selector current = selector;
+        if (current != null) {
+            current.wakeup();
+        }
+    }
+
+    private static void closeQuietly(java.io.Closeable closeable) {
+        if (closeable == null) {
+            return;
+        }
+        try {
+            closeable.close();
+        } catch (IOException ignored) {
         }
     }
 

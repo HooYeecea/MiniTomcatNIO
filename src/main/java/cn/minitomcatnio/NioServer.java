@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
- * 启动入口：创建 Engine / Host，扫描 webapps 自动部署后交给 Connector。
+ * ĺŻĺ¨ĺĽĺŁďźĺĺťş Engine / HostďźćŤć webapps čŞĺ¨é¨ç˝˛ĺäş¤çť Connectoră
  */
 public class NioServer {
 
@@ -23,6 +23,10 @@ public class NioServer {
         engine.addHost(host);
 
         Connector connector = new Connector(PORT, engine);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            connector.stop();
+            engine.stop();
+        }, "nio-shutdown"));
         connector.start();
     }
 }

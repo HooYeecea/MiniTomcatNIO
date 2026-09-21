@@ -41,6 +41,12 @@ public class Engine {
         return hosts;
     }
 
+    public void stop() {
+        for (Host host : hosts.values()) {
+            host.stop();
+        }
+    }
+
     public void invoke(HttpRequest request, HttpResponse response) {
         pipeline.invoke(request, response);
     }
