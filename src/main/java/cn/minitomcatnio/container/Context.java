@@ -8,6 +8,7 @@ import cn.minitomcatnio.servlet.Filter;
 import cn.minitomcatnio.http.HttpRequest;
 import cn.minitomcatnio.http.HttpResponse;
 import cn.minitomcatnio.servlet.Servlet;
+import cn.minitomcatnio.servlet.ServletConfig;
 import cn.minitomcatnio.servlet.ServletContextListener;
 import cn.minitomcatnio.session.SessionManager;
 import cn.minitomcatnio.loader.WebXmlLoader;
@@ -35,6 +36,7 @@ public class Context {
     private String path = "";
     private final List<FilterMapping> filterMappings = new ArrayList<>();
     private final List<ServletContextListener> listeners = new ArrayList<>();
+    private final IdentityHashMap<Servlet, Map<String, String>> servletInitParams = new IdentityHashMap<>();
     private final Map<Integer, String> errorPages = new HashMap<>();
     private final List<String> welcomeFiles = new ArrayList<>(List.of("index.html"));
     private boolean stopped;
@@ -68,7 +70,14 @@ public class Context {
     }
 
     public void addServlet(String pattern, Servlet servlet) {
+        addServlet(pattern, servlet, Map.of());
+    }
+
+    public void addServlet(String pattern, Servlet servlet, Map<String, String> initParams) {
         mapper.addWrapper(pattern, new Wrapper(pattern, servlet));
+        if (initParams != null && !initParams.isEmpty()) {
+            servletInitParams.put(servlet, initParams);
+        }
     }
 
     public void addFilter(String pattern, Filter filter, Set<DispatcherType> dispatchers) {
@@ -117,7 +126,8 @@ public class Context {
         for (Wrapper wrapper : mapper.mappings().values()) {
             Servlet servlet = wrapper.getServlet();
             if (startedServlets.put(servlet, Boolean.TRUE) == null) {
-                servlet.init();
+                Map<String, String> params = servletInitParams.get(servlet);
+                servlet.init(new ServletConfig(params));
             }
         }
         IdentityHashMap<Filter, Boolean> startedFilters = new IdentityHashMap<>();

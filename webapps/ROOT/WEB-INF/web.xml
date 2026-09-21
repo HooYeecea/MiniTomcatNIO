@@ -51,6 +51,14 @@
         <servlet-name>do</servlet-name>
         <servlet-class>cn.minitomcatnio.demo.DoServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>greeting</servlet-name>
+        <servlet-class>cn.minitomcatnio.demo.GreetingServlet</servlet-class>
+        <init-param>
+            <param-name>greeting</param-name>
+            <param-value>hello from web.xml</param-value>
+        </init-param>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>hello</servlet-name>
@@ -99,6 +107,10 @@
     <servlet-mapping>
         <servlet-name>do</servlet-name>
         <url-pattern>*.do</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>greeting</servlet-name>
+        <url-pattern>/greeting</url-pattern>
     </servlet-mapping>
     <error-page>
         <error-code>500</error-code>

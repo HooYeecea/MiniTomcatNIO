@@ -43,12 +43,14 @@ public class WebXmlLoader {
             }
 
             Map<String, Servlet> servlets = new LinkedHashMap<>();
+            Map<String, Map<String, String>> initParams = new LinkedHashMap<>();
             NodeList servletNodes = document.getElementsByTagName("servlet");
             for (int i = 0; i < servletNodes.getLength(); i++) {
                 Element servlet = (Element) servletNodes.item(i);
                 String name = text(servlet, "servlet-name");
                 String className = text(servlet, "servlet-class");
                 servlets.put(name, newInstance(context, className, Servlet.class));
+                initParams.put(name, readInitParams(servlet));
             }
 
             NodeList mappingNodes = document.getElementsByTagName("servlet-mapping");
@@ -60,7 +62,7 @@ public class WebXmlLoader {
                 if (servlet == null) {
                     throw new IllegalStateException("Unknown servlet-name in mapping: " + name);
                 }
-                context.addServlet(pattern, servlet);
+                context.addServlet(pattern, servlet, initParams.get(name));
             }
 
             Map<String, Filter> filters = new LinkedHashMap<>();
@@ -104,6 +106,16 @@ public class WebXmlLoader {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load " + webXml, e);
         }
+    }
+
+    private static Map<String, String> readInitParams(Element servlet) {
+        Map<String, String> params = new LinkedHashMap<>();
+        NodeList paramNodes = servlet.getElementsByTagName("init-param");
+        for (int i = 0; i < paramNodes.getLength(); i++) {
+            Element param = (Element) paramNodes.item(i);
+            params.put(text(param, "param-name"), text(param, "param-value"));
+        }
+        return params;
     }
 
     private static Set<DispatcherType> parseDispatchers(Element mapping) {
