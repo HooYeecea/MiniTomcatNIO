@@ -26,6 +26,9 @@
 
 BIO 兄弟项目：[MiniTomcat](https://github.com/HooYeecea/MiniTomcat)
 
+同时是父工程 [MiniSpring](../README(CN).md) 中的模块。MiniMVC 可通过
+`MvcNioApplication` 挂在本服务器上跑。
+
 ## 完成度（怎么看）
 
 | 参照物 | 大致进度 | 说明 |

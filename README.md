@@ -26,6 +26,9 @@ Write Servlets/Filters against `com.web`; container-only helpers stay on concret
 
 Sibling BIO server: [MiniTomcat](https://github.com/HooYeecea/MiniTomcat)
 
+Also a module of the parent [MiniSpring](../README.md) reactor. MiniMVC can boot on this
+server via `MvcNioApplication`.
+
 ## Completeness
 
 | Baseline | Rough progress | Notes |
