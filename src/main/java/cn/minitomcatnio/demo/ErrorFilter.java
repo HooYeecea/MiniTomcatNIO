@@ -1,9 +1,9 @@
 package cn.minitomcatnio.demo;
 
-import cn.minitomcatnio.http.HttpRequest;
-import cn.minitomcatnio.http.HttpResponse;
-import cn.minitomcatnio.servlet.Filter;
-import cn.minitomcatnio.servlet.FilterChain;
+import com.minispring.web.HttpRequest;
+import com.minispring.web.HttpResponse;
+import com.minispring.web.Filter;
+import com.minispring.web.FilterChain;
 
 /**
  * 只在 ERROR 派发时执行，用来验收 filter-mapping 的 dispatcher。
@@ -21,7 +21,7 @@ public class ErrorFilter implements Filter {
     }
 
     @Override
-    public void doFilter(HttpRequest request, HttpResponse response, FilterChain chain) {
+    public void doFilter(HttpRequest request, HttpResponse response, FilterChain chain) throws Exception {
         System.out.println("ErrorFilter: " + request.getPath()
                 + " dispatcher=" + request.getDispatcherType());
         chain.doFilter(request, response);

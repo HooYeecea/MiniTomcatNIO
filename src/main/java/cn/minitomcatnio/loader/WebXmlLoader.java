@@ -1,9 +1,9 @@
 package cn.minitomcatnio.loader;
 
 import cn.minitomcatnio.container.Context;
-import cn.minitomcatnio.servlet.DispatcherType;
-import cn.minitomcatnio.servlet.Filter;
-import cn.minitomcatnio.servlet.Servlet;
+import com.minispring.web.DispatcherType;
+import com.minispring.web.Filter;
+import com.minispring.web.Servlet;
 import cn.minitomcatnio.servlet.ServletContextListener;
 
 import org.w3c.dom.Document;

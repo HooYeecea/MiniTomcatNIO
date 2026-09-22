@@ -5,20 +5,17 @@ import com.minispring.web.HttpResponse;
 import com.minispring.web.Servlet;
 
 /**
- * 第二个应用 /other 的示例 Servlet。
+ * 读取应用级 context-param。
  */
-public class PingServlet implements Servlet {
-
-    @Override
-    public void init() {
-        System.out.println("Servlet init: PingServlet");
-    }
+public class ConfigServlet implements Servlet {
 
     @Override
     public void service(HttpRequest request, HttpResponse response) {
+        String appName = ((cn.minitomcatnio.http.HttpRequest) request)
+                .getContext()
+                .getInitParameter("appName");
         response.setStatus(200, "OK");
         response.setHeader("Content-Type", "text/plain; charset=UTF-8");
-        response.setBody("pong\ncontext=" + request.getContextPath()
-                + "\npath=" + request.getPathWithinContext() + "\n");
+        response.setBody("appName=" + appName + "\n");
     }
 }

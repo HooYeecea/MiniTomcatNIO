@@ -1,8 +1,8 @@
 package cn.minitomcatnio.demo;
 
-import cn.minitomcatnio.http.HttpRequest;
-import cn.minitomcatnio.http.HttpResponse;
-import cn.minitomcatnio.servlet.Servlet;
+import com.minispring.web.HttpRequest;
+import com.minispring.web.HttpResponse;
+import com.minispring.web.Servlet;
 
 /**
  * 示例 Servlet，映射到 /hello。

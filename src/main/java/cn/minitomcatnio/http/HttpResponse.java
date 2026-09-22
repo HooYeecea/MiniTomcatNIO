@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * 一次 HTTP 响应。业务只填状态和正文，编码成字节交给 NIO 去写。
  */
-public class HttpResponse {
+public class HttpResponse implements com.minispring.web.HttpResponse {
 
     private int status = 200;
     private String reason = "OK";
@@ -23,6 +23,12 @@ public class HttpResponse {
         headers.put("Content-Type", "text/plain; charset=UTF-8");
     }
 
+    @Override
+    public void setStatus(int status) {
+        setStatus(status, defaultReason(status));
+    }
+
+    @Override
     public void setStatus(int status, String reason) {
         this.status = status;
         this.reason = reason;
@@ -111,5 +117,14 @@ public class HttpResponse {
         buffer.put(body);
         buffer.flip();
         return buffer;
+    }
+
+    private static String defaultReason(int status) {
+        return switch (status) {
+            case 200 -> "OK";
+            case 404 -> "Not Found";
+            case 500 -> "Internal Server Error";
+            default -> "Status";
+        };
     }
 }

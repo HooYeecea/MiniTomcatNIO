@@ -2,11 +2,9 @@ package cn.minitomcatnio.http;
 
 import cn.minitomcatnio.servlet.ApplicationDispatcher;
 import cn.minitomcatnio.container.Context;
-import cn.minitomcatnio.servlet.DispatcherType;
-import cn.minitomcatnio.session.HttpSession;
-import cn.minitomcatnio.servlet.RequestDispatcher;
-import cn.minitomcatnio.servlet.Servlet;
 import cn.minitomcatnio.session.SessionManager;
+import com.minispring.web.DispatcherType;
+import com.minispring.web.RequestDispatcher;
 
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
@@ -16,9 +14,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * ÄÂ¤ĂÂ¸ĂÂĂÂÄšĹĄĂÂ HTTP ĂÂÄšĹĽĂÂĂÂĂÂĂÂĂÂÄšĹĂÂĂÂÄšĹĽĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂÂHeaderĂÂĂÂĂÂbodyĂÂĂÂĂÂĂĹĂÂĂÂĂÂĂÂĂÂ°ĂĹĂÂĂÂ CookieĂÂĂÂĂÂ
+ * NIO connector request: method, URI, headers, body, cookies, session binding.
  */
-public class HttpRequest {
+public class HttpRequest implements com.minispring.web.HttpRequest {
 
     private final String method;
     private final String uri;
@@ -32,7 +30,7 @@ public class HttpRequest {
     private final Map<String, String> cookies = new LinkedHashMap<>();
     private SessionManager sessionManager;
     private HttpResponse response;
-    private HttpSession session;
+    private cn.minitomcatnio.session.HttpSession session;
     private Context context;
     /** forward ĂĹĂÂĂÂĂÂÄšÂĂÂÄÂ§ĂÂĂÂĂĹÄšÂĂÂÄÂ§ĂÂĂÂ¨ĂĹĂÂĂÂĂÂĂÂÄšĹĽĂĹÄšĹžĂÂĂÂÄšĹĂÂĂÂĂÂÄšÂ forward ĂÂĂÂÄšÂÄÂ¤ĂÂ¸ÄšÂ nullĂÂĂÂĂÂ */
     private String dispatchedPath;
@@ -182,7 +180,8 @@ public class HttpRequest {
     /**
      * ĂÂĂÂĂÂ Cookie ÄĹ ĂÂĂÂÄÂ§ĂÂĂÂ JSESSIONID ĂĹĂÂĂÂ SessionĂÂÄšĹĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂĹĂÂ°ĂÂĂÂĂÂĂÂ°ĂĹÄšÄ˝ÄšÂĂĹÄšÄÄšÂ Set-CookieĂÂĂÂĂÂ
      */
-    public HttpSession getSession() {
+    @Override
+    public com.minispring.web.HttpSession getSession() {
         if (session != null) {
             return session;
         }

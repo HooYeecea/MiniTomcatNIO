@@ -1,8 +1,10 @@
 package cn.minitomcatnio.servlet;
 
 import cn.minitomcatnio.container.Context;
-import cn.minitomcatnio.http.HttpRequest;
-import cn.minitomcatnio.http.HttpResponse;
+import com.minispring.web.DispatcherType;
+import com.minispring.web.HttpRequest;
+import com.minispring.web.HttpResponse;
+import com.minispring.web.RequestDispatcher;
 
 /**
  * 同应用内的 forward / include。
@@ -19,27 +21,31 @@ public class ApplicationDispatcher implements RequestDispatcher {
 
     @Override
     public void forward(HttpRequest request, HttpResponse response) {
+        cn.minitomcatnio.http.HttpRequest req = (cn.minitomcatnio.http.HttpRequest) request;
+        cn.minitomcatnio.http.HttpResponse resp = (cn.minitomcatnio.http.HttpResponse) response;
         String target = normalize(path);
-        response.reset();
-        request.setDispatchedPath(target);
+        resp.reset();
+        req.setDispatchedPath(target);
         // error-page 已经标成 ERROR，不要被 forward 盖成 FORWARD
-        if (request.getDispatcherType() != DispatcherType.ERROR) {
-            request.setDispatcherType(DispatcherType.FORWARD);
+        if (req.getDispatcherType() != DispatcherType.ERROR) {
+            req.setDispatcherType(DispatcherType.FORWARD);
         }
-        context.dispatch(request, response);
+        context.dispatch(req, resp);
     }
 
     @Override
     public void include(HttpRequest request, HttpResponse response) {
-        String previousPath = request.getDispatchedPath();
-        DispatcherType previousType = request.getDispatcherType();
-        request.setDispatchedPath(normalize(path));
-        request.setDispatcherType(DispatcherType.INCLUDE);
-        HttpResponse included = new HttpResponse();
-        context.dispatch(request, included);
-        request.setDispatchedPath(previousPath);
-        request.setDispatcherType(previousType);
-        response.appendBody(included.getBody());
+        cn.minitomcatnio.http.HttpRequest req = (cn.minitomcatnio.http.HttpRequest) request;
+        cn.minitomcatnio.http.HttpResponse resp = (cn.minitomcatnio.http.HttpResponse) response;
+        String previousPath = req.getDispatchedPath();
+        DispatcherType previousType = req.getDispatcherType();
+        req.setDispatchedPath(normalize(path));
+        req.setDispatcherType(DispatcherType.INCLUDE);
+        cn.minitomcatnio.http.HttpResponse included = new cn.minitomcatnio.http.HttpResponse();
+        context.dispatch(req, included);
+        req.setDispatchedPath(previousPath);
+        req.setDispatcherType(previousType);
+        resp.appendBody(included.getBody());
     }
 
     private static String normalize(String path) {

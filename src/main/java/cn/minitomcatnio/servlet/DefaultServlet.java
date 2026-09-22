@@ -1,9 +1,10 @@
 package cn.minitomcatnio.servlet;
 
 import cn.minitomcatnio.container.Context;
-import cn.minitomcatnio.http.HttpRequest;
-import cn.minitomcatnio.http.HttpResponse;
 import cn.minitomcatnio.loader.StaticResourceProcessor;
+import com.minispring.web.HttpRequest;
+import com.minispring.web.HttpResponse;
+import com.minispring.web.Servlet;
 
 /**
  * 映射到 / 的默认 Servlet。精确、前缀、扩展名都未命中时，由它提供静态文件。
@@ -18,6 +19,9 @@ public class DefaultServlet implements Servlet {
 
     @Override
     public void service(HttpRequest request, HttpResponse response) {
-        StaticResourceProcessor.process(request, response, context);
+        StaticResourceProcessor.process(
+                (cn.minitomcatnio.http.HttpRequest) request,
+                (cn.minitomcatnio.http.HttpResponse) response,
+                context);
     }
 }

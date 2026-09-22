@@ -1,8 +1,11 @@
 package cn.minitomcatnio.servlet;
 
-import cn.minitomcatnio.http.HttpRequest;
-import cn.minitomcatnio.http.HttpResponse;
+import cn.minitomcatnio.container.Context;
 import cn.minitomcatnio.container.Wrapper;
+import com.minispring.web.Filter;
+import com.minispring.web.FilterChain;
+import com.minispring.web.HttpRequest;
+import com.minispring.web.HttpResponse;
 
 import java.util.List;
 
@@ -21,11 +24,13 @@ public class ApplicationFilterChain implements FilterChain {
     }
 
     @Override
-    public void doFilter(HttpRequest request, HttpResponse response) {
+    public void doFilter(HttpRequest request, HttpResponse response) throws Exception {
         if (index < filters.size()) {
             filters.get(index++).doFilter(request, response, this);
             return;
         }
-        wrapper.invoke(request, response);
+        wrapper.invoke(
+                (cn.minitomcatnio.http.HttpRequest) request,
+                (cn.minitomcatnio.http.HttpResponse) response);
     }
 }

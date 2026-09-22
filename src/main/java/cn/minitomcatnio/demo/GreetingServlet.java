@@ -2,23 +2,22 @@ package cn.minitomcatnio.demo;
 
 import com.minispring.web.HttpRequest;
 import com.minispring.web.HttpResponse;
-import com.minispring.web.Servlet;
+import cn.minitomcatnio.servlet.GenericServlet;
 
 /**
- * 第二个应用 /other 的示例 Servlet。
+ * 从 web.xml 的 init-param 读取 greeting。
  */
-public class PingServlet implements Servlet {
+public class GreetingServlet extends GenericServlet {
 
     @Override
     public void init() {
-        System.out.println("Servlet init: PingServlet");
+        System.out.println("Servlet init: GreetingServlet greeting=" + getInitParameter("greeting"));
     }
 
     @Override
     public void service(HttpRequest request, HttpResponse response) {
         response.setStatus(200, "OK");
         response.setHeader("Content-Type", "text/plain; charset=UTF-8");
-        response.setBody("pong\ncontext=" + request.getContextPath()
-                + "\npath=" + request.getPathWithinContext() + "\n");
+        response.setBody("greeting=" + getInitParameter("greeting") + "\n");
     }
 }
