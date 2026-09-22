@@ -9,6 +9,23 @@
 
 英文版：[README.md](README.md)
 
+## 共享 Servlet API
+
+面向应用的类型（`Servlet`、`Filter`、`FilterChain`、`HttpRequest`、`HttpResponse`、
+`ServletConfig`、`RequestDispatcher`、`HttpSession`、`DispatcherType`）已抽到独立模块，
+方便 BIO / NIO 两套 Tomcat 以及后续 MiniMVC 共用同一套契约：
+
+| 项 | 说明 |
+|----|------|
+| 模块 | `MiniServletApi`（`mini-servlet-api`） |
+| 包名 | `com.minispring.web` |
+| 仓库 | [https://github.com/HooYeecea/MiniServletAPI](https://github.com/HooYeecea/MiniServletAPI) |
+
+本工程**实现**该 API（NIO 版 `HttpRequest` / `HttpResponse`、容器、示例）。
+写 Servlet/Filter 请面向 `com.minispring.web`；容器私有能力仍留在具体实现类上。
+
+BIO 兄弟项目：[MiniTomcat](https://github.com/HooYeecea/MiniTomcat)
+
 ## 完成度（怎么看）
 
 | 参照物 | 大致进度 | 说明 |
@@ -78,13 +95,15 @@
 cn.minitomcatnio
 ├── NioServer                 # 启动入口
 ├── connector                 # NIO Connector
-├── http                      # HttpRequest / HttpResponse
+├── http                      # 具体 HttpRequest / HttpResponse（实现 mini-servlet-api）
 ├── container                 # Engine / Host / Context / Wrapper / Valve / Mapper
-├── servlet                   # Servlet / Filter / Dispatcher / DefaultServlet
-├── session                   # Session
+├── servlet                   # GenericServlet、DefaultServlet、FilterChain、Dispatcher 等
+├── session                   # 具体 HttpSession（实现 mini-servlet-api）
 ├── loader                    # web.xml、静态资源、WebappClassLoader
 └── demo                      # 示例 Servlet / Filter（供 webapps 引用）
 ```
+
+共享契约不在本仓库定义，见 [MiniServletAPI](https://github.com/HooYeecea/MiniServletAPI)。
 
 ## 目录与示例应用
 
@@ -105,6 +124,9 @@ hosts/app.local/              # Host app.local
 ```
 
 ## 构建与运行
+
+需要依赖 **`mini-servlet-api`**。若单独编译本模块，请先安装它
+（在 [MiniServletAPI](https://github.com/HooYeecea/MiniServletAPI) 仓库或父工程 `mini-spring` 下执行 `mvn install`）。
 
 在项目根目录（保证能读到 `webapps/` 和 `hosts/`）：
 

@@ -7,7 +7,24 @@ A mini Tomcat built with Java NIO. The goal is to make the main request path cle
 - Default host apps: `webapps/` (scanned and deployed at startup)
 - Second virtual host: `hosts/app.local/` (`Host: app.local`)
 
-Chinese version: [README(cn).md](README(cn).md)
+Chinese version: [README(CN).md](README(CN).md)
+
+## Shared Servlet API
+
+Application-facing types (`Servlet`, `Filter`, `FilterChain`, `HttpRequest`, `HttpResponse`,
+`ServletConfig`, `RequestDispatcher`, `HttpSession`, `DispatcherType`) live in a separate module
+so BIO / NIO Tomcat and MiniMVC can share one contract:
+
+| Item | Value |
+|------|--------|
+| Module | `MiniServletApi` (`mini-servlet-api`) |
+| Package | `com.minispring.web` |
+| Repository | [https://github.com/HooYeecea/MiniServletAPI](https://github.com/HooYeecea/MiniServletAPI) |
+
+This project **implements** that API (NIO `HttpRequest` / `HttpResponse`, container, demos).
+Write Servlets/Filters against `com.minispring.web`; container-only helpers stay on concrete classes.
+
+Sibling BIO server: [MiniTomcat](https://github.com/HooYeecea/MiniTomcat)
 
 ## Completeness
 
@@ -78,13 +95,15 @@ Static files, welcome files, and a missing-file 404 are not a special case outsi
 cn.minitomcatnio
 ├── NioServer                 # bootstrap
 ├── connector                 # NIO Connector
-├── http                      # HttpRequest / HttpResponse
+├── http                      # concrete HttpRequest / HttpResponse (implement mini-servlet-api)
 ├── container                 # Engine / Host / Context / Wrapper / Valve / Mapper
-├── servlet                   # Servlet / Filter / Dispatcher / DefaultServlet
-├── session                   # Session
+├── servlet                   # GenericServlet, DefaultServlet, FilterChain, Dispatcher, ...
+├── session                   # concrete HttpSession (implements mini-servlet-api)
 ├── loader                    # web.xml, static resources, WebappClassLoader
 └── demo                      # sample Servlet / Filter (referenced by webapps)
 ```
+
+Shared contracts are **not** defined here — see [MiniServletAPI](https://github.com/HooYeecea/MiniServletAPI).
 
 ## Directory layout & sample apps
 
@@ -105,6 +124,9 @@ hosts/app.local/              # Host app.local
 ```
 
 ## Build & run
+
+Requires **`mini-servlet-api`** on the classpath. Install it first if you build this module alone
+(`mvn install` in [MiniServletAPI](https://github.com/HooYeecea/MiniServletAPI) or via the parent `mini-spring` reactor).
 
 From the project root (so `webapps/` and `hosts/` are visible):
 
