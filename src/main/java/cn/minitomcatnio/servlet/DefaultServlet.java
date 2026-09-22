@@ -2,9 +2,9 @@ package cn.minitomcatnio.servlet;
 
 import cn.minitomcatnio.container.Context;
 import cn.minitomcatnio.loader.StaticResourceProcessor;
-import com.minispring.web.HttpRequest;
-import com.minispring.web.HttpResponse;
-import com.minispring.web.Servlet;
+import com.web.HttpRequest;
+import com.web.HttpResponse;
+import com.web.Servlet;
 
 /**
  * 映射到 / 的默认 Servlet。精确、前缀、扩展名都未命中时，由它提供静态文件。

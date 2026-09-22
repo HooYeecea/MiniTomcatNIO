@@ -1,7 +1,7 @@
 package cn.minitomcatnio.servlet;
 
-import com.minispring.web.Servlet;
-import com.minispring.web.ServletConfig;
+import com.web.Servlet;
+import com.web.ServletConfig;
 
 /**
  * 记住容器传入的 ServletConfig，这样 service 里也能读 init-param。

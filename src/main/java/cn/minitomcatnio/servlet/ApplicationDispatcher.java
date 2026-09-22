@@ -1,10 +1,10 @@
 package cn.minitomcatnio.servlet;
 
 import cn.minitomcatnio.container.Context;
-import com.minispring.web.DispatcherType;
-import com.minispring.web.HttpRequest;
-import com.minispring.web.HttpResponse;
-import com.minispring.web.RequestDispatcher;
+import com.web.DispatcherType;
+import com.web.HttpRequest;
+import com.web.HttpResponse;
+import com.web.RequestDispatcher;
 
 /**
  * 同应用内的 forward / include。

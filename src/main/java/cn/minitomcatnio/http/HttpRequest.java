@@ -3,8 +3,8 @@ package cn.minitomcatnio.http;
 import cn.minitomcatnio.servlet.ApplicationDispatcher;
 import cn.minitomcatnio.container.Context;
 import cn.minitomcatnio.session.SessionManager;
-import com.minispring.web.DispatcherType;
-import com.minispring.web.RequestDispatcher;
+import com.web.DispatcherType;
+import com.web.RequestDispatcher;
 
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * NIO connector request: method, URI, headers, body, cookies, session binding.
  */
-public class HttpRequest implements com.minispring.web.HttpRequest {
+public class HttpRequest implements com.web.HttpRequest {
 
     private final String method;
     private final String uri;
@@ -181,7 +181,7 @@ public class HttpRequest implements com.minispring.web.HttpRequest {
      * ĂÂĂÂĂÂ Cookie ÄĹ ĂÂĂÂÄÂ§ĂÂĂÂ JSESSIONID ĂĹĂÂĂÂ SessionĂÂÄšĹĂÂĂÂĂÂĂÂĂÂĂÂĂÂĂĹĂÂ°ĂÂĂÂĂÂĂÂ°ĂĹÄšÄ˝ÄšÂĂĹÄšÄÄšÂ Set-CookieĂÂĂÂĂÂ
      */
     @Override
-    public com.minispring.web.HttpSession getSession() {
+    public com.web.HttpSession getSession() {
         if (session != null) {
             return session;
         }

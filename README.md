@@ -18,11 +18,11 @@ so BIO / NIO Tomcat and MiniMVC can share one contract:
 | Item | Value |
 |------|--------|
 | Module | `MiniServletApi` (`mini-servlet-api`) |
-| Package | `com.minispring.web` |
+| Package | `com.web` |
 | Repository | [https://github.com/HooYeecea/MiniServletAPI](https://github.com/HooYeecea/MiniServletAPI) |
 
 This project **implements** that API (NIO `HttpRequest` / `HttpResponse`, container, demos).
-Write Servlets/Filters against `com.minispring.web`; container-only helpers stay on concrete classes.
+Write Servlets/Filters against `com.web`; container-only helpers stay on concrete classes.
 
 Sibling BIO server: [MiniTomcat](https://github.com/HooYeecea/MiniTomcat)
 

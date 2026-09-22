@@ -1,9 +1,9 @@
 package cn.minitomcatnio.demo;
 
-import com.minispring.web.Filter;
-import com.minispring.web.FilterChain;
-import com.minispring.web.HttpRequest;
-import com.minispring.web.HttpResponse;
+import com.web.Filter;
+import com.web.FilterChain;
+import com.web.HttpRequest;
+import com.web.HttpResponse;
 
 /**
  * ROOT 应用的示例 Filter，用来验收过滤器链。

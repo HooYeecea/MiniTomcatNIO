@@ -1,8 +1,8 @@
 package cn.minitomcatnio.demo;
 
-import com.minispring.web.HttpRequest;
-import com.minispring.web.HttpResponse;
-import com.minispring.web.Servlet;
+import com.web.HttpRequest;
+import com.web.HttpResponse;
+import com.web.Servlet;
 
 /**
  * 演示 include：先写一行，再嵌入 /hello 的正文。

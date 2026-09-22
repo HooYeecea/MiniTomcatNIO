@@ -1,8 +1,8 @@
 package cn.minitomcatnio.demo;
 
-import com.minispring.web.HttpRequest;
-import com.minispring.web.HttpResponse;
-import com.minispring.web.Servlet;
+import com.web.HttpRequest;
+import com.web.HttpResponse;
+import com.web.Servlet;
 
 /**
  * 演示 forward：/forward 转到 /hello。

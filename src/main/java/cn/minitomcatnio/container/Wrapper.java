@@ -2,7 +2,7 @@ package cn.minitomcatnio.container;
 
 import cn.minitomcatnio.http.HttpRequest;
 import cn.minitomcatnio.http.HttpResponse;
-import com.minispring.web.Servlet;
+import com.web.Servlet;
 
 /**
  * 包住一个 Servlet。Context 的 Mapper 找到的是 Wrapper，再由它去调 Servlet。

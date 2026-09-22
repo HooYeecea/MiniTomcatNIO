@@ -1,8 +1,8 @@
 package cn.minitomcatnio.demo;
 
-import com.minispring.web.HttpRequest;
-import com.minispring.web.HttpResponse;
-import com.minispring.web.Servlet;
+import com.web.HttpRequest;
+import com.web.HttpResponse;
+import com.web.Servlet;
 
 /**
  * 故意抛异常，用来触发 error-page。

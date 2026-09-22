@@ -1,9 +1,9 @@
 package cn.minitomcatnio.demo;
 
-import com.minispring.web.HttpRequest;
-import com.minispring.web.HttpResponse;
-import com.minispring.web.HttpSession;
-import com.minispring.web.Servlet;
+import com.web.HttpRequest;
+import com.web.HttpResponse;
+import com.web.HttpSession;
+import com.web.Servlet;
 
 /**
  * 用来验收 Session：同一 JSESSIONID 连续访问时 count 递增。

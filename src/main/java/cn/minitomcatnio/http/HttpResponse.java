@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * 一次 HTTP 响应。业务只填状态和正文，编码成字节交给 NIO 去写。
  */
-public class HttpResponse implements com.minispring.web.HttpResponse {
+public class HttpResponse implements com.web.HttpResponse {
 
     private int status = 200;
     private String reason = "OK";

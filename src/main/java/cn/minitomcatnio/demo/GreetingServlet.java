@@ -1,7 +1,7 @@
 package cn.minitomcatnio.demo;
 
-import com.minispring.web.HttpRequest;
-import com.minispring.web.HttpResponse;
+import com.web.HttpRequest;
+import com.web.HttpResponse;
 import cn.minitomcatnio.servlet.GenericServlet;
 
 /**

@@ -1,9 +1,9 @@
 package cn.minitomcatnio.demo;
 
-import com.minispring.web.HttpRequest;
-import com.minispring.web.HttpResponse;
-import com.minispring.web.Filter;
-import com.minispring.web.FilterChain;
+import com.web.HttpRequest;
+import com.web.HttpResponse;
+import com.web.Filter;
+import com.web.FilterChain;
 
 /**
  * 只在 ERROR 派发时执行，用来验收 filter-mapping 的 dispatcher。

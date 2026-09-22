@@ -18,11 +18,11 @@
 | 项 | 说明 |
 |----|------|
 | 模块 | `MiniServletApi`（`mini-servlet-api`） |
-| 包名 | `com.minispring.web` |
+| 包名 | `com.web` |
 | 仓库 | [https://github.com/HooYeecea/MiniServletAPI](https://github.com/HooYeecea/MiniServletAPI) |
 
 本工程**实现**该 API（NIO 版 `HttpRequest` / `HttpResponse`、容器、示例）。
-写 Servlet/Filter 请面向 `com.minispring.web`；容器私有能力仍留在具体实现类上。
+写 Servlet/Filter 请面向 `com.web`；容器私有能力仍留在具体实现类上。
 
 BIO 兄弟项目：[MiniTomcat](https://github.com/HooYeecea/MiniTomcat)
 
